@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { ApiError, Site } from '@lunasite/shared-types';
 import { SITES, SITES_BY_ID } from './data/sites';
+import { catalogueState } from './data/catalogue-state';
 import { compareBody, dayToDate, HttpError, LIMITS, panelQuery, parse, periodQuery } from './common/http';
 import { earthAnalysis, gridFor, makePeriod, missionScore, solarAnalysis } from './modules/solar/analysis';
 
@@ -47,7 +48,7 @@ export function createApp() {
   app.use(express.json({ limit: '50kb' }));
   app.use((req, res, next) => { res.locals.requestId = randomUUID(); res.setHeader('X-Request-Id', res.locals.requestId); next(); });
 
-  app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+  app.get('/api/health', (_req, res) => res.json({ status: 'ok', catalogueSource: catalogueState.source, catalogueFallbackReason: catalogueState.error }));
 
   app.get('/api/sites', wrap((req) => {
     const { region, terrain, origin } = req.query as Record<string, string | undefined>;

@@ -2,28 +2,43 @@ import type { Site } from '@lunasite/shared-types';
 import { maskFromUniform, type HorizonMask } from '../engine/geometry';
 import horizons from './horizons.json';
 
-interface HorizonFile {
-  meta: null | {
-    dataset: string; product: string; url: string; resolutionM: number; sha256: string;
-    maxRangeKm: number; generatedAt: string; notes: string[];
-  };
-  sites: Record<string, {
-    elevationM: number; slopeDeg: number | null; maxSlopeDeg: number | null; localReliefM: number | null; horizonElevationDeg: number[]; minRangeKm: number; maxHorizonDeg: number;
-  }>;
+export interface TerrainMeta {
+  dataset: string; product: string; url: string; resolutionM: number; sha256: string;
+  maxRangeKm: number; generatedAt: string; notes: string[];
 }
-const file = horizons as unknown as HorizonFile;
+export interface TerrainRecord {
+  elevationM: number; slopeDeg: number | null; maxSlopeDeg: number | null; localReliefM: number | null;
+  horizonElevationDeg: number[]; minRangeKm: number; maxHorizonDeg: number;
+}
+export interface HorizonFile { meta: TerrainMeta | null; sites: Record<string, TerrainRecord> }
 
-export const TERRAIN_META = file.meta;
+/** Données embarquées (repli sans base) : produites par scripts/import-lola.ts. */
+export const EMBEDDED_TERRAIN = horizons as unknown as HorizonFile;
+
+export let TERRAIN_META: TerrainMeta | null = EMBEDDED_TERRAIN.meta;
+let records: Record<string, TerrainRecord> = EMBEDDED_TERRAIN.sites;
 const masks = new Map<string, HorizonMask>();
-for (const [id, t] of Object.entries(file.sites)) masks.set(id, maskFromUniform(t.horizonElevationDeg));
+
+function rebuildMasks(): void {
+  masks.clear();
+  for (const [id, t] of Object.entries(records)) masks.set(id, maskFromUniform(t.horizonElevationDeg));
+}
+rebuildMasks();
+
+/** Remplace le relief en mémoire (utilisé par le chargement depuis PostgreSQL). */
+export function setTerrain(file: HorizonFile): void {
+  TERRAIN_META = file.meta;
+  records = file.sites;
+  rebuildMasks();
+}
 
 export const maskFor = (siteId: string): HorizonMask | undefined => masks.get(siteId);
-export const terrainInfo = (siteId: string) => file.sites[siteId];
+export const terrainInfo = (siteId: string) => records[siteId];
 
-/** Complète le catalogue avec les valeurs LOLA importées (hauteur, pente, présence d'un masque d'horizon). */
+/** Complète le catalogue avec les valeurs LOLA (hauteur, pente, relief local, présence d'un masque d'horizon). */
 export function applyTerrain(sites: Site[]): void {
   for (const s of sites) {
-    const t = file.sites[s.id];
+    const t = records[s.id];
     if (!t) continue;
     s.elevationM = t.elevationM;
     s.terrain = { slopeDeg: t.slopeDeg, localReliefM: t.localReliefM, shadowRisk: s.terrain.shadowRisk, horizonMask: true };

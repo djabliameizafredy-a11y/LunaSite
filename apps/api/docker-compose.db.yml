@@ -1,0 +1,14 @@
+# PostgreSQL de DEV pour l'API (port 5433 pour ne pas entrer en conflit avec une base locale sur 5432).
+#   docker compose -f docker-compose.db.yml up -d
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: lunasite-pg
+    environment:
+      POSTGRES_USER: lunasite
+      POSTGRES_PASSWORD: lunasite_dev
+      POSTGRES_DB: lunasite
+    ports: ["5433:5432"]
+    volumes: ["lunasite_pg:/var/lib/postgresql/data"]
+volumes:
+  lunasite_pg:
