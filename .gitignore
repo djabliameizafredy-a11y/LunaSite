@@ -1,2 +1,4 @@
 node_modules/
 data/lola/raw/*.img
+.docs/
+.data/
