@@ -1,0 +1,9 @@
+{
+  "name": "lunasite",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "api:dev": "npm run dev -w @lunasite/api",
+    "api:test": "npm run test -w @lunasite/api"
+  }
+}
