@@ -7,6 +7,7 @@ import {
   round, sunSeries, visibleHours, windowsFrom, type Grid, type PanelParams, type SiteInput,
 } from '../../engine/series';
 import { ensureBudget, LIMITS } from '../../common/http';
+import { terrainScore } from '../mission-score/terrain-score';
 import { maskFor, TERRAIN_META, terrainInfo } from '../../data/terrain';
 
 export interface Period { start: Date; end: Date; stepMinutes: number }
@@ -104,20 +105,14 @@ export function earthAnalysis(site: Site, p: Period, grid?: Grid): EarthVisibili
 
 export const WEIGHTS = { solar: 0.4, communication: 0.35, terrain: 0.25 } as const;
 
-/** Score terrain provisoire (décision 5 non tranchée) : uniquement si pente ET risque d'ombre sont connus. */
-function terrainScore(site: Site): number | null {
-  const { slopeDeg, shadowRisk } = site.terrain;
-  if (slopeDeg == null || shadowRisk == null) return null;
-  return round(100 * (1 - Math.min(1, shadowRisk)) * (1 - Math.min(slopeDeg, 20) / 20), 1);
-}
-
 export function missionScore(site: Site, p: Period, grid?: Grid): MissionScore {
   const g = grid ?? gridFor(p);
   const solar = solarAnalysis(site, p, {}, g);
   const earth = earthAnalysis(site, p, g);
   const solarScore = round(solar.sunlitFraction * 100, 1);
   const communicationScore = round(earth.visibleFraction * 100, 1);
-  const terrain = terrainScore(site);
+  const terrainDetail = terrainScore(site);
+  const terrain = terrainDetail ? terrainDetail.score : null;
   const global =
     terrain == null ? null
       : round(WEIGHTS.solar * solarScore + WEIGHTS.communication * communicationScore + WEIGHTS.terrain * terrain, 1);
@@ -127,9 +122,10 @@ export function missionScore(site: Site, p: Period, grid?: Grid): MissionScore {
     solarScore,
     communicationScore,
     terrainScore: terrain,
+    terrainScoreDetail: terrainDetail,
     globalScore: global,
     globalScoreUnavailableReason:
-      terrain == null ? "Score terrain indisponible : aucune donnée de pente / risque d'ombre (LOLA) importée pour ce site. Il n'est pas remplacé par 0." : null,
+      terrain == null ? "Score terrain indisponible : aucune donnée de pente / relief local (LOLA) pour ce site (le relief n'est importé que pour les sites ≥ 80,5°S). Il n'est pas remplacé par 0." : null,
     partialScore: round((WEIGHTS.solar * solarScore + WEIGHTS.communication * communicationScore) / wSum, 1),
     partialScoreCriteria: ['solar', 'communication'],
     weights: { ...WEIGHTS },

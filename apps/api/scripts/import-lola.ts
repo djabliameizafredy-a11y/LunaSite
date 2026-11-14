@@ -30,14 +30,18 @@ for (const s of SITES) {
   const h0 = dem.height(s.latitude, s.longitude);
   if (h0 === null) continue;
   const prof = horizonProfile(dem, s.latitude, s.longitude, h0, maxRangeKm);
+  const st = dem.localStats(s.latitude, s.longitude, 250);
   out[s.id] = {
     elevationM: Math.round(h0),
-    slopeDeg: dem.slopeDeg(s.latitude, s.longitude) === null ? null : Math.round(dem.slopeDeg(s.latitude, s.longitude)! * 10) / 10,
+    // Disque de 250 m de rayon (≈ zone d'atterrissage) ; null si le disque sort du DEM.
+    slopeDeg: st ? Math.round(st.meanSlopeDeg * 10) / 10 : null,
+    maxSlopeDeg: st ? Math.round(st.maxSlopeDeg * 10) / 10 : null,
+    localReliefM: st ? Math.round(st.reliefM) : null,
     horizonElevationDeg: prof.elevationDeg,
     minRangeKm: Math.min(...prof.rangeKm),
     maxHorizonDeg: Math.max(...prof.elevationDeg),
   };
-  console.log(`${s.id.padEnd(18)} h=${Math.round(h0)} m  pente=${(out[s.id] as { slopeDeg: number }).slopeDeg}°  horizon max=${Math.max(...prof.elevationDeg)}°  portée min=${Math.min(...prof.rangeKm)} km`);
+  console.log(`${s.id.padEnd(18)} h=${Math.round(h0)} m  pente moy=${(out[s.id] as { slopeDeg: number }).slopeDeg}° relief=${(out[s.id] as { localReliefM: number }).localReliefM} m  horizon max=${Math.max(...prof.elevationDeg)}°  portée min=${Math.min(...prof.rangeKm)} km`);
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -60,7 +64,7 @@ writeFileSync(
         "Horizon = plus grand angle d'élévation des pixels du DEM jusqu'à maxRangeKm, courbure lunaire incluse.",
         "Le DEM s'arrête à 80°S : près de ce bord, la portée est plus courte (minRangeKm) et l'horizon peut être sous-estimé.",
         "Résolution 80 m : les petits obstacles (rochers, cratères < 200 m) ne sont pas représentés ; ~90 % des pixels polaires sont interpolés entre traces laser.",
-        "Pente sur une base d'environ 160 m ; dépend de la résolution du DEM.",
+        "Pente moyenne et relief local sur un disque de 250 m de rayon, pente par différences centrées sur ±80 m : dépend de la résolution du DEM ; cailloux et petits cratères non vus.",
       ],
     },
     sites: out,

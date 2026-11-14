@@ -48,13 +48,24 @@ describe('API REST', () => {
     expect(r.body.error.code).toBe('BUDGET_EXCEEDED');
   });
 
-  it('mission-score : score global null expliqué (jamais 0) quand le terrain manque', async () => {
-    const r = await request(app).get('/api/sites/shackleton/mission-score?date=2026-11-14&days=30&stepMinutes=60').expect(200);
+  it('mission-score : score global null expliqué (jamais 0) pour un site sans données de relief', async () => {
+    const r = await request(app).get('/api/sites/apollo11/mission-score?date=2026-11-14&days=30&stepMinutes=60').expect(200);
     expect(r.body.terrainScore).toBeNull();
+    expect(r.body.terrainScoreDetail).toBeNull();
     expect(r.body.globalScore).toBeNull();
-    expect(r.body.globalScoreUnavailableReason).toMatch(/terrain/);
+    expect(r.body.globalScoreUnavailableReason).toMatch(/relief/);
     expect(r.body.partialScore).toBeGreaterThanOrEqual(0);
     expect(r.body.partialScoreCriteria).toEqual(['solar', 'communication']);
+  });
+
+  it('mission-score : site polaire -> score terrain détaillé et score global calculé', async () => {
+    const r = await request(app).get('/api/sites/malapert/mission-score?date=2026-11-14&days=30&stepMinutes=60').expect(200);
+    expect(r.body.terrainScore).toBeGreaterThan(0);
+    expect(r.body.terrainScoreDetail.version).toBe('terrain-v0.1');
+    expect(r.body.terrainScoreDetail.params.slopeZeroDeg).toBe(15);
+    expect(r.body.globalScoreUnavailableReason).toBeNull();
+    const w = r.body.weights;
+    expect(r.body.globalScore).toBeCloseTo(w.solar * r.body.solarScore + w.communication * r.body.communicationScore + w.terrain * r.body.terrainScore, 0);
   });
 
   it('site personnalisé via lat/lon', async () => {
@@ -86,6 +97,14 @@ describe('API REST', () => {
     const scores = r.body.ranking.map((x: { rankingScore: number }) => x.rankingScore);
     expect([...scores].sort((a, b) => b - a)).toEqual(scores);
     expect(r.body.ranking[0].rankingBasis).toBe('partial');
+    expect(r.body.rankingBasis).toBe('partial'); // base commune : Apollo etc. n'ont pas de terrain
+  });
+
+  it('recommendations ?region=south-pole : classement sur le score global, base commune', async () => {
+    const r = await request(app).get('/api/recommendations?date=2026-11-14&days=30&stepMinutes=120&region=south-pole').expect(200);
+    expect(r.body.rankingBasis).toBe('global');
+    expect(r.body.ranking.every((x: { rankingBasis: string }) => x.rankingBasis === 'global')).toBe(true);
+    await request(app).get('/api/recommendations?date=2026-11-14&region=mars').expect(404);
   });
 
   it('JSON invalide -> 400', async () => {

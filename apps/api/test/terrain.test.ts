@@ -28,10 +28,16 @@ describe('import LOLA : intégrité des données', () => {
   it('les sites hors du DEM (> -80,5°) restent sans masque, jamais un masque inventé', () => {
     for (const id of ['apollo11', 'apollo15', 'chandrayaan3', 'blue-ghost']) expect(SITES_BY_ID.get(id)!.terrain.horizonMask).toBe(false);
   });
-  it("hauteurs cohérentes avec la géographie connue : plateau Mons Mouton haut, fond de Haworth bas", () => {
+  it("hauteurs cohérentes avec la géographie connue : plateau Mons Mouton et massif Malapert hauts", () => {
     expect(SITES_BY_ID.get('im2-mons-mouton')!.elevationM!).toBeGreaterThan(3000);
     expect(SITES_BY_ID.get('malapert')!.elevationM!).toBeGreaterThan(3000);
-    expect(SITES_BY_ID.get('haworth')!.elevationM!).toBeLessThan(-2000);
+  });
+  it("les points candidats de crête ne sont pas des fonds de cratère, et ont une pente moyenne <= 10°", () => {
+    for (const s of SITES.filter((x) => x.coordinatesStatus === 'derived_from_dem')) {
+      expect(s.elevationM!, s.id).toBeGreaterThan(-500);
+      expect(s.terrain.slopeDeg!, s.id).toBeLessThanOrEqual(10);
+      expect(s.coordinatesSource).toMatch(/Non officiel/);
+    }
   });
 });
 
@@ -46,9 +52,14 @@ describe('masque d\'horizon', () => {
 });
 
 describe('effet du relief sur les résultats', () => {
-  it("Shackleton : l'horizon plat donnait ~100 % de Soleil, le relief réel le ramène à ~0 %", () => {
-    expect(solarAnalysis(flat('shackleton'), p).sunlitFraction).toBeGreaterThan(0.9);
-    expect(solarAnalysis(SITES_BY_ID.get('shackleton')!, p).sunlitFraction).toBeLessThan(0.05);
+  it("Shackleton (crête) : l'horizon plat surestime l'ensoleillement (~100 %), le relief le ramène nettement plus bas", () => {
+    const f = solarAnalysis(flat('shackleton'), p).sunlitFraction;
+    const t = solarAnalysis(SITES_BY_ID.get('shackleton')!, p).sunlitFraction;
+    expect(f).toBeGreaterThan(0.9);
+    expect(f - t).toBeGreaterThan(0.2);
+  });
+  it("de Gerlache : l'horizon plat surestime aussi l'ensoleillement", () => {
+    expect(solarAnalysis(flat('de-gerlache'), p).sunlitFraction - solarAnalysis(SITES_BY_ID.get('de-gerlache')!, p).sunlitFraction).toBeGreaterThan(0.2);
   });
   it("un sommet (Malapert, +4,4 km) voit la Terre plus longtemps qu'avec un horizon plat", () => {
     expect(earthAnalysis(SITES_BY_ID.get('malapert')!, p).visibleFraction).toBeGreaterThan(earthAnalysis(flat('malapert'), p).visibleFraction);

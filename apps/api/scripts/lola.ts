@@ -59,6 +59,27 @@ export class Dem {
     );
   }
 
+  /**
+   * Statistiques sur un disque de rayon `radiusM` (≈ zone d'atterrissage) : pente moyenne et max (différences
+   * centrées sur ±1 pixel) et relief local (max - min des hauteurs). null si le disque sort du DEM.
+   */
+  localStats(latDeg: number, lonDeg: number, radiusM: number): { meanSlopeDeg: number; maxSlopeDeg: number; reliefM: number } | null {
+    const [c, r] = this.project(latDeg, lonDeg);
+    const ci = Math.round(c), ri = Math.round(r), k = Math.max(1, Math.round(radiusM / this.pixelM));
+    if (!this.inside(ci - k - 1, ri - k - 1) || !this.inside(ci + k + 1, ri + k + 1)) return null;
+    let sum = 0, n = 0, mx = 0, hmin = Infinity, hmax = -Infinity;
+    for (let dy = -k; dy <= k; dy++) for (let dx = -k; dx <= k; dx++) {
+      if (dx * dx + dy * dy > k * k) continue;
+      const x = ci + dx, y = ri + dy;
+      const gx = (this.at(x + 1, y) - this.at(x - 1, y)) / (2 * this.pixelM);
+      const gy = (this.at(x, y + 1) - this.at(x, y - 1)) / (2 * this.pixelM);
+      const sl = Math.atan(Math.hypot(gx, gy)) / DEG;
+      sum += sl; n++; mx = Math.max(mx, sl);
+      const h = this.at(x, y); hmin = Math.min(hmin, h); hmax = Math.max(hmax, h);
+    }
+    return { meanSlopeDeg: sum / n, maxSlopeDeg: mx, reliefM: hmax - hmin };
+  }
+
   /** Pente locale (°) par différences centrées sur ±1 pixel (base ≈ 160 m : dépend de la résolution). */
   slopeDeg(latDeg: number, lonDeg: number): number | null {
     const [c, r] = this.project(latDeg, lonDeg);
@@ -78,7 +99,7 @@ export interface HorizonResult {
 }
 
 /** Point atteint depuis (lat,lon) par le relèvement `az` à la distance angulaire `theta` (sphère). */
-function destination(lat: number, lon: number, az: number, theta: number): [number, number] {
+export function destination(lat: number, lon: number, az: number, theta: number): [number, number] {
   const la = lat * DEG, lo = lon * DEG, a = az * DEG;
   const lat2 = Math.asin(Math.sin(la) * Math.cos(theta) + Math.cos(la) * Math.sin(theta) * Math.cos(a));
   const lon2 = lo + Math.atan2(Math.sin(a) * Math.sin(theta) * Math.cos(la), Math.cos(theta) - Math.sin(la) * Math.sin(lat2));
@@ -89,13 +110,13 @@ function destination(lat: number, lon: number, az: number, theta: number): [numb
  * Profil d'horizon depuis un site : pour chaque azimut, plus grand angle d'élévation
  * (géométrie sphérique : la courbure de la Lune est incluse) des points du DEM jusqu'à `maxRangeKm`.
  */
-export function horizonProfile(dem: Dem, latDeg: number, lonDeg: number, h0: number, maxRangeKm = 200, observerHeightM = 0): HorizonResult {
+export function horizonProfile(dem: Dem, latDeg: number, lonDeg: number, h0: number, maxRangeKm = 200, observerHeightM = 0, azStepDeg = 1): HorizonResult {
   const lat = Math.max(latDeg, -89.9999999);
   const step = dem.pixelM; // m
   const nSteps = Math.floor((maxRangeKm * 1000) / step);
   const elevationDeg: number[] = [], rangeKm: number[] = [];
   const r0 = R_M + h0 + observerHeightM;
-  for (let az = 0; az < 360; az++) {
+  for (let az = 0; az < 360; az += azStepDeg) {
     let best = -90, reached = 0;
     for (let i = 1; i <= nSteps; i++) {
       const theta = (i * step) / R_M;

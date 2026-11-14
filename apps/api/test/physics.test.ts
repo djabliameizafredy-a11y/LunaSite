@@ -6,7 +6,7 @@ import { earthAnalysis, makePeriod, solarAnalysis } from '../src/modules/solar/a
 const mk = (lat: number, lon: number): Site => ({
   id: 'custom', name: 't', region: 'custom', latitude: lat, longitude: lon, elevationM: null, terrainType: null,
   description: '', origin: 'reference', coordinatesStatus: 'published', coordinatesSource: 'test',
-  terrain: { slopeDeg: null, shadowRisk: null, horizonMask: false },
+  terrain: { slopeDeg: null, localReliefM: null, shadowRisk: null, horizonMask: false },
 });
 const day = (s: string) => new Date(`${s}T00:00:00Z`);
 const SYNODIC = 29.53;

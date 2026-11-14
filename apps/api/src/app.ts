@@ -23,7 +23,7 @@ function resolveSite(id: string, query: unknown): Site {
       longitude: lon > 180 ? lon - 360 : lon, elevationM: null, terrainType: null, origin: 'reference',
       description: "Coordonnées saisies par l'utilisateur (latitude sélénographique, longitude Est positive).",
       coordinatesStatus: 'published', coordinatesSource: 'Saisie utilisateur',
-      terrain: { slopeDeg: null, shadowRisk: null, horizonMask: false },
+      terrain: { slopeDeg: null, localReliefM: null, shadowRisk: null, horizonMask: false },
     };
   }
   const site = SITES_BY_ID.get(id);
@@ -115,18 +115,24 @@ export function createApp() {
 
   app.get('/api/recommendations', wrap((req) => {
     const p = periodOf(req.query);
-    const sites = SITES.filter((s) => s.origin !== 'reference' || s.id === 'south-pole');
+    const region = typeof req.query.region === 'string' ? req.query.region : undefined;
+    const sites = SITES.filter((s) => (s.origin !== 'reference' || s.id === 'south-pole') && (!region || s.region === region));
+    if (!sites.length) throw new HttpError(404, 'NOT_FOUND', `Aucun site pour la région : ${region}`, 'region');
     const grid = gridFor(p, sites.length);
-    const ranking = sites.map((site) => {
-      const sc = missionScore(site, p, grid);
-      return {
-        siteId: site.id, siteName: site.name, rankingScore: sc.globalScore ?? sc.partialScore,
-        rankingBasis: sc.globalScore != null ? 'global' : 'partial', score: sc,
-      };
-    }).sort((a, b) => b.rankingScore - a.rankingScore).map((r, i) => ({ rank: i + 1, ...r }));
+    const scored = sites.map((site) => ({ site, score: missionScore(site, p, grid) }));
+    // Base de classement COMMUNE : global seulement si tous les sites ont un score global, sinon partiel pour tous
+    // (comparer un score global et un score partiel serait trompeur).
+    const basis: 'global' | 'partial' = scored.every((x) => x.score.globalScore != null) ? 'global' : 'partial';
+    const ranking = scored.map(({ site, score }) => ({
+      siteId: site.id, siteName: site.name,
+      rankingScore: basis === 'global' ? score.globalScore! : score.partialScore, rankingBasis: basis, score,
+    })).sort((a, b) => b.rankingScore - a.rankingScore).map((r, i) => ({ rank: i + 1, ...r }));
     return {
       period: { start: p.start.toISOString(), end: p.end.toISOString() },
-      criteria: 'Tri par score global ; à défaut score partiel (solaire + communication) explicitement signalé. Aide à la comparaison, pas une recommandation opérationnelle d\'atterrissage.',
+      rankingBasis: basis,
+      criteria: basis === 'global'
+        ? "Tri par score global (0,40 solaire + 0,35 communication + 0,25 terrain). Aide à la comparaison, pas une recommandation opérationnelle d'atterrissage."
+        : "Tri par score partiel (solaire + communication) car le score terrain n'existe pas pour tous les sites ; filtrez avec ?region=south-pole pour un classement avec le terrain. Pas une recommandation opérationnelle d'atterrissage.",
       ranking,
     };
   }));

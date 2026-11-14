@@ -55,7 +55,7 @@ Chaque réponse de résultat porte `meta` (`ResultMeta`, voir `packages/shared-t
 - Terre visible = condition géométrique, pas une liaison radio. Pas de lumière-temps ni d'aberration.
 - **Coordonnées du catalogue** : seules celles marquées `published` ont une source citée ; les autres sont
   `approximate_to_verify` et doivent être revérifiées (gazetteer IAU / NASA SVS 5013) avant la démo.
-- Score global = `null` tant qu'il n'y a pas de score terrain (jamais 0) ; `partialScore` (solaire + communication) est fourni et étiqueté.
+- Score global = `null` pour les sites sans relief LOLA (jamais 0) ; `partialScore` (solaire + communication) est fourni et étiqueté. Les recommandations utilisent une base de classement commune (`rankingBasis`) ; `?region=south-pole` classe sur le score global.
 
 ## Import LOLA (relief → masques d'horizon)
 
@@ -71,11 +71,27 @@ L'orientation des axes n'est pas dans le label PDS : elle a été déterminée �
 avec le point le plus bas près du pôle (fond de Shackleton). Effet mesuré sur 30 jours (14/11/2026) : Shackleton 100 % → 0 % de Soleil,
 Haworth 70 % → 0 %, plateau IM-2 59 % → 51 %, Malapert (sommet) Terre visible 69 % → 100 %.
 
+## Score terrain (`terrain-v0.1`, proposition à valider)
+
+`score = 100 × (0,7 × facteurPente + 0,3 × facteurRelief)`, avec `facteurPente = 1 − clamp(pente moyenne / 15°)` et
+`facteurRelief = 1 − clamp(relief local / 150 m)`, mesurés sur un disque de 250 m de rayon (LOLA 80 m). Code : `src/modules/mission-score/terrain-score.ts`.
+- Il mesure le danger de la **surface** seulement : l'éclairement et la visibilité de la Terre sont déjà dans les scores solaire et communication (pas de double comptage).
+- Les seuils (15°, 150 m) et poids (0,7/0,3) sont **illustratifs, choisis par nous** — ni exigences NASA ni d'un fournisseur d'atterrisseur. Ils sont renvoyés dans `terrainScoreDetail.params` à chaque réponse.
+- Un DEM de 80 m ne voit ni cailloux ni petits cratères : un bon score n'est pas une garantie de sûreté. Pente ou relief inconnus → `null`.
+
+## Points candidats de crête
+
+Les points des cratères/massifs polaires ne sont plus des coordonnées de mémoire : `scripts/select-sites.ts` cherche dans le DEM,
+autour d'un centre approximatif (anneau ≈ rayon du cratère), le point qui maximise `0,533 × éclairement + 0,467 × visibilité Terre` sur 2027
+sous la contrainte pente moyenne ≤ 10°. Résultat reproductible dans `data/lola/selection.json` (top 5 par zone). Statut `derived_from_dem`.
+**Ce ne sont pas les régions Artemis officielles** (centres de recherche approximatifs, certains optimums proches du bord de la zone, ex. Nobile) :
+à confronter aux régions NASA avant toute présentation comme telles. Pour IM-2, Chandrayaan-3 et Apollo : coordonnées publiées inchangées.
+
 ## Décisions prises par défaut (à valider par Fayose, §14 du document)
 
 1. Express (pas NestJS) ; 2. calculs en JS/TS dans l'API (une seule stack) ; 4. paramètres d'énergie ci-dessus ;
 6. comparaison de plusieurs dates pour un même site : **implémentée** (`dates:[…]`).
-Restent ouverts : définition du score terrain, projection cartographique.
+5. score terrain : **proposé ci-dessus (v0.1)**, à valider. Reste ouvert : projection cartographique.
 
 ## Prochaines étapes
 

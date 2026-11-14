@@ -8,7 +8,7 @@ interface HorizonFile {
     maxRangeKm: number; generatedAt: string; notes: string[];
   };
   sites: Record<string, {
-    elevationM: number; slopeDeg: number | null; horizonElevationDeg: number[]; minRangeKm: number; maxHorizonDeg: number;
+    elevationM: number; slopeDeg: number | null; maxSlopeDeg: number | null; localReliefM: number | null; horizonElevationDeg: number[]; minRangeKm: number; maxHorizonDeg: number;
   }>;
 }
 const file = horizons as unknown as HorizonFile;
@@ -26,6 +26,6 @@ export function applyTerrain(sites: Site[]): void {
     const t = file.sites[s.id];
     if (!t) continue;
     s.elevationM = t.elevationM;
-    s.terrain = { slopeDeg: t.slopeDeg, shadowRisk: s.terrain.shadowRisk, horizonMask: true };
+    s.terrain = { slopeDeg: t.slopeDeg, localReliefM: t.localReliefM, shadowRisk: s.terrain.shadowRisk, horizonMask: true };
   }
 }

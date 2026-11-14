@@ -34,10 +34,13 @@ export interface Site {
   terrainType: string | null;
   description: string;
   origin: 'apollo' | 'clps' | 'commercial' | 'international' | 'feature' | 'reference';
-  coordinatesStatus: 'published' | 'approximate_to_verify';
+  coordinatesStatus: 'published' | 'approximate_to_verify' | 'derived_from_dem';
   coordinatesSource: string;
   terrain: {
+    /** Pente moyenne sur un disque de 250 m de rayon (LOLA 80 m). */
     slopeDeg: number | null;
+    /** Relief local (max - min des hauteurs) sur ce disque, mètres. */
+    localReliefM: number | null;
     shadowRisk: number | null;
     horizonMask: boolean;
   };
@@ -100,11 +103,25 @@ export interface EarthVisibilityResult {
   meta: ResultMeta;
 }
 
+export interface TerrainScoreDetail {
+  version: string;
+  /** 0–100, plus haut = surface plus sûre. */
+  score: number;
+  meanSlopeDeg: number;
+  localReliefM: number;
+  slopeFactor: number;
+  reliefFactor: number;
+  params: { slopeZeroDeg: number; reliefZeroM: number; weightSlope: number; weightRelief: number };
+  note: string;
+}
+
 export interface MissionScore {
   siteId: string;
   solarScore: number;
   communicationScore: number;
   terrainScore: number | null;
+  /** Détail et paramètres du score terrain (null si pente/relief inconnus). */
+  terrainScoreDetail: TerrainScoreDetail | null;
   /** null si un critère obligatoire manque (jamais remplacé par 0). */
   globalScore: number | null;
   globalScoreUnavailableReason: string | null;
