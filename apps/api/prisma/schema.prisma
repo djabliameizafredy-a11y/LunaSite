@@ -1,0 +1,187 @@
+// Schéma LunaSite — PROPOSITION alignée sur « Architecture et structure de la solution » §6.
+// Les noms de tables du §6 sont conservés (@@map). Ajouts « à valider » du §6 inclus :
+//   - calculation_level / method_version / is_mock sur les tables de résultats ;
+//   - lien résultat <-> nasa_datasets (traçabilité) ;
+//   - valeur inconnue = NULL (champs optionnels), jamais 0 ;
+//   - données de démonstration marquées is_mock, séparées des imports scientifiques.
+// Les séries d'élévation/azimut ne sont PAS stockées : calculées à la demande et mises en cache (§6).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CalculationLevel {
+  mock
+  simplified
+  terrain_aware @map("terrain-aware")
+}
+
+enum SiteOrigin {
+  apollo
+  clps
+  commercial
+  international
+  feature
+  reference
+}
+
+enum CoordinatesStatus {
+  published
+  approximate_to_verify
+  derived_from_dem
+}
+
+/// Traçabilité des jeux de données (LOLA, éphémérides, etc.).
+model NasaDataset {
+  id         String   @id
+  name       String
+  provider   String
+  url        String?
+  version    String?
+  /// Empreinte du fichier importé (reproductibilité).
+  sha256     String?
+  importedAt DateTime @map("imported_at")
+  notes      Json?
+
+  terrainData      TerrainData[]
+  missionWindows   MissionWindow[]
+  earthVisibility  EarthVisibility[]
+  missionScores    MissionScore[]
+
+  @@map("nasa_datasets")
+}
+
+/// Sites candidats (catalogue). `id` = identifiant lisible utilisé par l'API (ex. "malapert").
+model LandingSite {
+  id                 String            @id
+  name               String
+  region             String
+  /// Latitude sélénographique, degrés, Sud négatif.
+  latitude           Float
+  /// Longitude Est positive, -180..180.
+  longitude          Float
+  /// Hauteur / sphère de 1737,4 km, mètres. NULL = inconnue.
+  elevation          Float?
+  terrainType        String?           @map("terrain_type")
+  description        String
+  origin             SiteOrigin
+  coordinatesStatus  CoordinatesStatus @map("coordinates_status")
+  coordinatesSource  String            @map("coordinates_source")
+  /// Site de démonstration (jamais présenté comme donnée scientifique).
+  isMock             Boolean           @default(false) @map("is_mock")
+
+  terrainData     TerrainData[]
+  missionWindows  MissionWindow[]
+  earthVisibility EarthVisibility[]
+  missionScores   MissionScore[]
+
+  @@index([region])
+  @@map("landing_sites")
+}
+
+/// Relief et risque d'ombre d'un site. Un enregistrement par (site, jeu de données).
+model TerrainData {
+  id                  String   @id @default(uuid())
+  siteId              String   @map("site_id")
+  datasetId           String   @map("source_dataset_id")
+  elevation           Float?
+  /// Pente moyenne (°) sur un disque de 250 m de rayon.
+  slope               Float?
+  maxSlope            Float?   @map("max_slope")
+  /// Relief local (m) : max - min des hauteurs sur ce disque.
+  localRelief         Float?   @map("local_relief")
+  /// NULL tant qu'aucune définition validée (décision 5).
+  shadowRisk          Float?   @map("shadow_risk")
+  /// Élévation de l'horizon (°) pour chaque azimut entier 0..359 ; NULL si non calculé.
+  horizonElevationDeg Json?    @map("horizon_elevation_deg")
+  maxHorizonDeg       Float?   @map("max_horizon_deg")
+  /// Plus courte portée (km) du profil (limitée par le bord du DEM).
+  minRangeKm          Float?   @map("min_range_km")
+  maxRangeKm          Float?   @map("max_range_km")
+  isMock              Boolean  @default(false) @map("is_mock")
+
+  site    LandingSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  dataset NasaDataset @relation(fields: [datasetId], references: [id])
+
+  @@unique([siteId, datasetId])
+  @@map("terrain_data")
+}
+
+/// Résumé d'ensoleillement d'un site sur une période [startDate, endDate).
+model MissionWindow {
+  id                String           @id @default(uuid())
+  siteId            String           @map("site_id")
+  startDate         DateTime         @map("start_date")
+  endDate           DateTime         @map("end_date")
+  stepMinutes       Int              @map("step_minutes")
+  sunExposureHours  Float?           @map("sun_exposure_hours")
+  darknessHours     Float?           @map("darkness_hours")
+  calculationLevel  CalculationLevel @map("calculation_level")
+  methodVersion     String           @map("method_version")
+  isMock            Boolean          @default(false) @map("is_mock")
+  computedAt        DateTime         @default(now()) @map("computed_at")
+
+  site     LandingSite   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  datasets NasaDataset[]
+
+  // Clé de cache du §7 : site + période + méthode (+ version des données via datasets).
+  @@unique([siteId, startDate, endDate, stepMinutes, methodVersion, calculationLevel])
+  @@map("mission_windows")
+}
+
+/// Résumé de visibilité géométrique de la Terre sur une période.
+model EarthVisibility {
+  id               String           @id @default(uuid())
+  siteId           String           @map("site_id")
+  startDate        DateTime         @map("date")
+  endDate          DateTime         @map("end_date")
+  stepMinutes      Int              @map("step_minutes")
+  visibilityHours  Float?           @map("visibility_hours")
+  maxElevation     Float?           @map("max_elevation")
+  /// Cause d'obstruction dominante (ex. "terrain", "hors disque lunaire"). NULL si inconnue.
+  obstructionCause String?          @map("obstruction_cause")
+  calculationLevel CalculationLevel @map("calculation_level")
+  methodVersion    String           @map("method_version")
+  isMock           Boolean          @default(false) @map("is_mock")
+  computedAt       DateTime         @default(now()) @map("computed_at")
+
+  site     LandingSite   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  datasets NasaDataset[]
+
+  @@unique([siteId, startDate, endDate, stepMinutes, methodVersion, calculationLevel])
+  @@map("earth_visibility")
+}
+
+/// Score de faisabilité (ajout d'équipe : aide à la comparaison, pas un résultat principal).
+model MissionScore {
+  id                  String           @id @default(uuid())
+  siteId              String           @map("site_id")
+  startDate           DateTime         @map("date")
+  endDate             DateTime         @map("end_date")
+  stepMinutes         Int              @map("step_minutes")
+  solarScore          Float            @map("solar_score")
+  communicationScore  Float            @map("communication_score")
+  /// NULL si pente / relief inconnus.
+  terrainScore        Float?           @map("terrain_score")
+  /// NULL si un critère obligatoire manque (jamais remplacé par 0).
+  globalScore         Float?           @map("global_score")
+  partialScore        Float            @map("partial_score")
+  /// Pondérations utilisées (0,40 / 0,35 / 0,25 par défaut) — choix d'équipe, pas un standard NASA.
+  weights             Json
+  terrainScoreVersion String?          @map("terrain_score_version")
+  calculationLevel    CalculationLevel @map("calculation_level")
+  methodVersion       String           @map("method_version")
+  isMock              Boolean          @default(false) @map("is_mock")
+  computedAt          DateTime         @default(now()) @map("computed_at")
+
+  site     LandingSite   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  datasets NasaDataset[]
+
+  @@unique([siteId, startDate, endDate, stepMinutes, methodVersion, calculationLevel])
+  @@map("mission_scores")
+}

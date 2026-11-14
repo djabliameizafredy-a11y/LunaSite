@@ -12,8 +12,27 @@ npm run api:dev        # http://localhost:3001/api  (PORT=… pour changer)
 npm run api:test       # 24 tests (repère lunaire, physique, API)
 ```
 
-Aucune base de données ni clé API n'est requise pour l'instant : le catalogue de sites est
-dans `apps/api/src/data/sites.ts`, les calculs sont faits à la volée (cache mémoire des éphémérides).
+**PostgreSQL est optionnel.** Sans `DATABASE_URL`, l'API utilise le catalogue embarqué (`apps/api/src/data/sites.ts`) : le frontend
+n'est jamais bloqué par la base. Les calculs sont faits à la volée (cache mémoire des éphémérides).
+
+### Base de données (PostgreSQL + Prisma 7)
+
+```bash
+cd apps/api
+cp .env.example .env          # DATABASE_URL (port 5433 par défaut pour éviter un conflit avec une base locale)
+npm run db:up                 # PostgreSQL 16 de dev via Docker (docker-compose.db.yml)
+npm run db:migrate            # applique prisma/migrations
+npm run db:seed               # copie le catalogue + le relief LOLA dans la base (idempotent)
+npm run dev                   # « Catalogue chargé depuis PostgreSQL : 13 sites, 9 relevés de terrain »
+```
+Schéma : `apps/api/prisma/schema.prisma`, **proposition alignée sur le §6** (tables `landing_sites`, `terrain_data`, `mission_windows`,
+`earth_visibility`, `mission_scores`, `nasa_datasets`) avec les ajouts « à valider » : `calculation_level`, `method_version`, `is_mock`,
+lien résultat ↔ jeu de données, inconnu = `NULL`. Les séries Soleil/Terre ne sont pas stockées (calculées à la demande).
+Au démarrage l'API charge le catalogue depuis la base en mémoire (le moteur reste synchrone). Si la base est injoignable ou vide, repli
+**explicite** sur le catalogue embarqué (log serveur + `/api/health` → `catalogueSource`). Résultat vérifié identique dans les deux modes.
+Les tests d'intégration (`test/db.test.ts`) sont ignorés sans `DATABASE_URL`.
+**Non encore branché :** l'écriture des résumés de résultats (`mission_*`, `earth_visibility`) comme cache — tables et clés d'unicité prêtes.
+**À coordonner avec la personne qui travaille sur la BD** : comparer ce schéma au sien avant de fusionner.
 
 ## Endpoints (voir « Architecture (version corrigée) » §7)
 

@@ -112,3 +112,10 @@ export const SITES: Site[] = [
 applyTerrain(SITES);
 
 export const SITES_BY_ID = new Map(SITES.map((s) => [s.id, s]));
+
+/** Remplace le contenu du catalogue en place (les modules qui importent SITES / SITES_BY_ID voient la mise à jour). */
+export function replaceCatalogue(sites: Site[]): void {
+  SITES.splice(0, SITES.length, ...sites);
+  SITES_BY_ID.clear();
+  for (const s of sites) SITES_BY_ID.set(s.id, s);
+}
