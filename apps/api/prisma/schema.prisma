@@ -109,6 +109,7 @@ model TerrainData {
   dataset NasaDataset @relation(fields: [datasetId], references: [id])
 
   @@unique([siteId, datasetId])
+  @@index([datasetId])
   @@map("terrain_data")
 }
 

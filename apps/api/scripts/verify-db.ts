@@ -21,12 +21,18 @@ try {
   // 1. Migrations
   const mig = await c.query(`SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`);
   const names = mig.rows.map((r) => r.migration_name);
-  check(names.some((n) => n.endsWith('_init')) && names.some((n) => n.endsWith('_hardening')), `migrations appliquées : ${names.join(', ')}`);
+  check(names.some((n) => n.endsWith('_init')) && names.some((n) => n.endsWith('_hardening'))
+    && names.some((n) => n.endsWith('_lock_api_roles')), `migrations appliquées : ${names.join(', ')}`);
 
   // 2. RLS
   const rls = await c.query(`SELECT relname, relrowsecurity FROM pg_class WHERE relnamespace = 'public'::regnamespace AND relname = ANY($1)`, [TABLES]);
   const noRls = rls.rows.filter((r) => !r.relrowsecurity).map((r) => r.relname);
   check(rls.rowCount === TABLES.length && noRls.length === 0, `RLS active sur ${TABLES.length} tables${noRls.length ? ' — manquante : ' + noRls.join(', ') : ''}`);
+
+  // 2 bis. API REST Supabase fermée : aucun droit pour anon / authenticated (no-op en local, rôles absents)
+  const grants = await c.query(`SELECT count(*)::int AS n FROM information_schema.role_table_grants
+    WHERE table_schema = 'public' AND grantee IN ('anon', 'authenticated')`);
+  check(grants.rows[0].n === 0, `aucun droit de table pour anon/authenticated (${grants.rows[0].n} trouvé(s))`);
 
   // 3. timestamptz
   const ts = await c.query(`SELECT table_name, column_name FROM information_schema.columns
