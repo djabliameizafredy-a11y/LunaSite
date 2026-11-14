@@ -31,6 +31,11 @@ lien résultat ↔ jeu de données, inconnu = `NULL`. Les séries Soleil/Terre n
 Au démarrage l'API charge le catalogue depuis la base en mémoire (le moteur reste synchrone). Si la base est injoignable ou vide, repli
 **explicite** sur le catalogue embarqué (log serveur + `/api/health` → `catalogueSource`). Résultat vérifié identique dans les deux modes.
 Les tests d'intégration (`test/db.test.ts`) sont ignorés sans `DATABASE_URL`.
+**Base hébergée (Supabase, projet LunaSpace)** : dans `apps/api/.env`, mettre `DATABASE_URL` = pooler mode transaction
+(port **6543**, `?pgbouncer=true`) pour l'API, et `DIRECT_URL` = pooler mode session (port **5432**) pour `prisma migrate` / `db seed`
+(Supabase > Connect > ORMs > Prisma). Puis `npm run db:deploy && npm run db:seed` (jamais `migrate dev` sur la base partagée).
+La migration `20261114150000_hardening` passe les dates en `timestamptz`, ajoute les contraintes CHECK (coordonnées, durées,
+scores 0–100, cohérence mock/niveau de calcul) et active la RLS sur toutes les tables (API REST Supabase fermée aux clés anon).
 **Non encore branché :** l'écriture des résumés de résultats (`mission_*`, `earth_visibility`) comme cache — tables et clés d'unicité prêtes.
 **À coordonner avec la personne qui travaille sur la BD** : comparer ce schéma au sien avant de fusionner.
 

@@ -45,7 +45,7 @@ model NasaDataset {
   version    String?
   /// Empreinte du fichier importé (reproductibilité).
   sha256     String?
-  importedAt DateTime @map("imported_at")
+  importedAt DateTime @map("imported_at") @db.Timestamptz(3)
   notes      Json?
 
   terrainData      TerrainData[]
@@ -116,15 +116,15 @@ model TerrainData {
 model MissionWindow {
   id                String           @id @default(uuid())
   siteId            String           @map("site_id")
-  startDate         DateTime         @map("start_date")
-  endDate           DateTime         @map("end_date")
+  startDate         DateTime         @map("start_date") @db.Timestamptz(3)
+  endDate           DateTime         @map("end_date") @db.Timestamptz(3)
   stepMinutes       Int              @map("step_minutes")
   sunExposureHours  Float?           @map("sun_exposure_hours")
   darknessHours     Float?           @map("darkness_hours")
   calculationLevel  CalculationLevel @map("calculation_level")
   methodVersion     String           @map("method_version")
   isMock            Boolean          @default(false) @map("is_mock")
-  computedAt        DateTime         @default(now()) @map("computed_at")
+  computedAt        DateTime         @default(now()) @map("computed_at") @db.Timestamptz(3)
 
   site     LandingSite   @relation(fields: [siteId], references: [id], onDelete: Cascade)
   datasets NasaDataset[]
@@ -138,8 +138,8 @@ model MissionWindow {
 model EarthVisibility {
   id               String           @id @default(uuid())
   siteId           String           @map("site_id")
-  startDate        DateTime         @map("date")
-  endDate          DateTime         @map("end_date")
+  startDate        DateTime         @map("date") @db.Timestamptz(3)
+  endDate          DateTime         @map("end_date") @db.Timestamptz(3)
   stepMinutes      Int              @map("step_minutes")
   visibilityHours  Float?           @map("visibility_hours")
   maxElevation     Float?           @map("max_elevation")
@@ -148,7 +148,7 @@ model EarthVisibility {
   calculationLevel CalculationLevel @map("calculation_level")
   methodVersion    String           @map("method_version")
   isMock           Boolean          @default(false) @map("is_mock")
-  computedAt       DateTime         @default(now()) @map("computed_at")
+  computedAt       DateTime         @default(now()) @map("computed_at") @db.Timestamptz(3)
 
   site     LandingSite   @relation(fields: [siteId], references: [id], onDelete: Cascade)
   datasets NasaDataset[]
@@ -161,8 +161,8 @@ model EarthVisibility {
 model MissionScore {
   id                  String           @id @default(uuid())
   siteId              String           @map("site_id")
-  startDate           DateTime         @map("date")
-  endDate             DateTime         @map("end_date")
+  startDate           DateTime         @map("date") @db.Timestamptz(3)
+  endDate             DateTime         @map("end_date") @db.Timestamptz(3)
   stepMinutes         Int              @map("step_minutes")
   solarScore          Float            @map("solar_score")
   communicationScore  Float            @map("communication_score")
@@ -177,7 +177,7 @@ model MissionScore {
   calculationLevel    CalculationLevel @map("calculation_level")
   methodVersion       String           @map("method_version")
   isMock              Boolean          @default(false) @map("is_mock")
-  computedAt          DateTime         @default(now()) @map("computed_at")
+  computedAt          DateTime         @default(now()) @map("computed_at") @db.Timestamptz(3)
 
   site     LandingSite   @relation(fields: [siteId], references: [id], onDelete: Cascade)
   datasets NasaDataset[]
