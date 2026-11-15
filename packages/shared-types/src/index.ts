@@ -140,3 +140,45 @@ export interface ApiError {
     requestId?: string;
   };
 }
+
+/* ---------- Validation contre JPL Horizons (GET /api/validation, /api/sites/:id/validation) ---------- */
+
+export type ReferenceBody = 'sun' | 'earth';
+
+export interface BodyComparison {
+  body: ReferenceBody;
+  samples: number;
+  period: { start: string; end: string } | null;
+  /** Écarts LunaSite − Horizons, degrés. null = aucune référence (jamais 0 par défaut). */
+  maxAbsElevationDiffDeg: number | null;
+  meanAbsElevationDiffDeg: number | null;
+  maxAbsAzimuthDiffDeg: number | null;
+  /** Instants où les deux calculs divergent sur « au-dessus / au-dessous de l'horizon plat ». */
+  visibilityDisagreements: number;
+}
+
+export interface ReferenceMeta {
+  datasetId: string; source: string; apiVersion: string; ephemeris: string; centerFrame: string;
+  fetchedAt: string; start: string; stop: string; step: string; sha256: string;
+}
+
+export interface ValidationEnvelope {
+  available: boolean;
+  /** Raison lisible quand available = false. */
+  reason: string | null;
+  source: ReferenceMeta | null;
+  referenceSource: 'embedded' | 'database';
+  notes: string[];
+}
+
+export interface SiteValidation extends ValidationEnvelope {
+  siteId: string;
+  siteName: string;
+  sun: BodyComparison | null;
+  earth: BodyComparison | null;
+}
+
+export interface ValidationSummary extends ValidationEnvelope {
+  summary: { sites: number; maxAbsElevationDiffDeg: number | null; maxAbsAzimuthDiffDeg: number | null };
+  sites: Array<{ siteId: string; siteName: string; sun: BodyComparison; earth: BodyComparison }>;
+}
