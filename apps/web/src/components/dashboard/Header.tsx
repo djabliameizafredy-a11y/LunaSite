@@ -20,7 +20,7 @@ const StyledBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
 }));
 
 const TITLES: Record<string, string> = {
-  '/dashboard': "Vue d'ensemble", '/sites': 'Catalogue des sites', '/limits': 'Données et limites', '/about': 'À propos',
+  '/dashboard': "Vue d'ensemble", '/sites': 'Catalogue des sites', '/limits': 'Données et limites', '/about': 'À propos', '/horizon': 'Horizon 3D',
 };
 
 // Repris de Header.tsx du template : fil d'Ariane à gauche ; à droite, période (au lieu de Search + notifications) et thème.

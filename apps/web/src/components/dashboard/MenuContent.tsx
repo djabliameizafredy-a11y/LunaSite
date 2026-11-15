@@ -11,6 +11,7 @@ import Stack from '@mui/material/Stack';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import AnalyticsRoundedIcon from '@mui/icons-material/AnalyticsRounded';
 import TableRowsRoundedIcon from '@mui/icons-material/TableRowsRounded';
+import LandscapeRoundedIcon from '@mui/icons-material/LandscapeRounded';
 import CompareArrowsRoundedIcon from '@mui/icons-material/CompareArrowsRounded';
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
@@ -22,6 +23,7 @@ type Item = { text: string; href: string; icon: React.ReactNode; soon?: boolean 
 const mainListItems: Item[] = [
   { text: 'Accueil', href: '/', icon: <HomeRoundedIcon /> },
   { text: "Vue d'ensemble", href: '/dashboard', icon: <AnalyticsRoundedIcon /> },
+  { text: 'Horizon 3D', href: '/horizon', icon: <LandscapeRoundedIcon /> },
   { text: 'Catalogue des sites', href: '/sites', icon: <TableRowsRoundedIcon /> },
   { text: 'Comparer', href: '/compare', icon: <CompareArrowsRoundedIcon />, soon: true },
   { text: 'Recommandations', href: '/recommendations', icon: <EmojiEventsRoundedIcon />, soon: true },

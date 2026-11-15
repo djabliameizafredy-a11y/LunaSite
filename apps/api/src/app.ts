@@ -9,6 +9,7 @@ import { compareBody, dayToDate, HttpError, LIMITS, panelQuery, parse, periodQue
 import { earthAnalysis, gridFor, makePeriod, missionScore, solarAnalysis } from './modules/solar/analysis';
 import { compareWithHorizons, VALIDATION_NOTES } from './modules/validation/compare';
 import { getReference, referenceState } from './data/reference';
+import { TERRAIN_META, terrainInfo } from './data/terrain';
 
 const coords = z.object({
   lat: z.coerce.number().min(-90).max(90).optional(),
@@ -66,6 +67,21 @@ export function createApp() {
         terrainHorizon: site.terrain.horizonMask,
         terrainMetrics: site.terrain.slopeDeg != null && site.terrain.shadowRisk != null,
       },
+    };
+  }));
+
+  // Profil d'horizon LOLA brut (vue horizon 3D). Pas de relief chargé : available=false, jamais d'horizon inventé.
+  app.get('/api/sites/:id/horizon', wrap((req) => {
+    const site = resolveSite(req.params.id, {});
+    const t = site.terrain.horizonMask ? terrainInfo(site.id) : undefined;
+    return {
+      siteId: site.id,
+      available: Boolean(t),
+      azimuthStepDeg: t ? 360 / t.horizonElevationDeg.length : null,
+      elevationDeg: t ? t.horizonElevationDeg : null,
+      maxHorizonDeg: t ? t.maxHorizonDeg : null,
+      maxRangeKm: TERRAIN_META?.maxRangeKm ?? null,
+      source: t && TERRAIN_META ? { dataset: TERRAIN_META.dataset, product: TERRAIN_META.product, url: TERRAIN_META.url, resolutionM: TERRAIN_META.resolutionM } : null,
     };
   }));
 

@@ -18,6 +18,7 @@ type Entry = { kind: Kind; label: string; hint: string; keywords: string; href: 
 const PAGES: Entry[] = [
   { kind: 'Pages', label: 'Accueil', hint: 'Présentation et vidéo', keywords: 'home landing', href: '/' },
   { kind: 'Pages', label: "Vue d'ensemble", hint: 'Résultats du site choisi', keywords: 'dashboard tableau de bord résultats', href: '/dashboard' },
+  { kind: 'Pages', label: 'Horizon 3D', hint: 'Soleil et Terre vus depuis le site, relief LOLA', keywords: '3d simulation vue horizon relief crête lever coucher', href: '/horizon' },
   { kind: 'Pages', label: 'Catalogue des sites', hint: 'Tableau de tous les sites', keywords: 'liste comparer tableau pente relief coordonnées', href: '/sites' },
   { kind: 'Pages', label: 'Données et limites', hint: 'Sources NASA, validation, limites', keywords: 'sources nasa jpl horizons lola méthode', href: '/limits' },
   { kind: 'Pages', label: 'À propos', hint: "Ce qu'est LunaSite, comment l'utiliser", keywords: 'aide mode emploi guide comment utiliser', href: '/about' },

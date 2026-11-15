@@ -182,3 +182,15 @@ export interface ValidationSummary extends ValidationEnvelope {
   summary: { sites: number; maxAbsElevationDiffDeg: number | null; maxAbsAzimuthDiffDeg: number | null };
   sites: Array<{ siteId: string; siteName: string; sun: BodyComparison; earth: BodyComparison }>;
 }
+
+/** GET /api/sites/:id/horizon : profil d'horizon LOLA (élévation par azimut, depuis le Nord vers l'Est). */
+export interface HorizonProfile {
+  siteId: string;
+  available: boolean;
+  azimuthStepDeg: number | null;
+  /** elevationDeg[i] = élévation de l'horizon à l'azimut i × azimuthStepDeg. null = pas de relief chargé. */
+  elevationDeg: number[] | null;
+  maxHorizonDeg: number | null;
+  maxRangeKm: number | null;
+  source: { dataset: string; product: string; url: string; resolutionM: number } | null;
+}

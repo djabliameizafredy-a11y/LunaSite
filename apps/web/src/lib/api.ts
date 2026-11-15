@@ -1,4 +1,4 @@
-import type { ApiError, EarthVisibilityResult, MissionScore, Site, SiteValidation, SolarResult, ValidationSummary } from '@lunasite/shared-types';
+import type { ApiError, EarthVisibilityResult, HorizonProfile, MissionScore, Site, SiteValidation, SolarResult, ValidationSummary } from '@lunasite/shared-types';
 
 /** URL de l'API Express (apps/api). Surchargée par NEXT_PUBLIC_API_URL en déploiement. */
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -41,5 +41,6 @@ export const api = {
   earth: (id: string, p: PeriodParams) => request<EarthVisibilityResult>(`${site(id)}/earth-visibility?${qs({ ...p })}`),
   score: (id: string, p: PeriodParams) => request<MissionScore>(`${site(id)}/mission-score?${qs({ ...p })}`),
   validation: () => request<ValidationSummary>('/validation'),
+  horizon: (id: string) => request<HorizonProfile>(`${site(id)}/horizon`),
   siteValidation: (id: string) => request<SiteValidation>(`${site(id)}/validation`),
 };
