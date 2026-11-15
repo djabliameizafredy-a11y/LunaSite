@@ -194,3 +194,11 @@ export interface HorizonProfile {
   maxRangeKm: number | null;
   source: { dataset: string; product: string; url: string; resolutionM: number } | null;
 }
+
+/** GET /api/moon/geometry : points subsolaire et subterrestre (repère lunaire fixe, longitude Est). */
+export interface MoonGeometry {
+  t: string;
+  frame: string;
+  subSolar: { latDeg: number; lonDeg: number };
+  subEarth: { latDeg: number; lonDeg: number };
+}

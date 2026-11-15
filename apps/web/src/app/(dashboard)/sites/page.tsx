@@ -8,6 +8,7 @@ import type { Site } from '@lunasite/shared-types';
 import { useDashboard } from '@/components/dashboard/DashboardState';
 import { UNAVAILABLE } from '@/lib/format';
 import { ErrorState } from '@/components/results/LoadState';
+import { GlobeCard } from '@/components/globe/GlobeCard';
 
 const STATUS: Record<Site['coordinatesStatus'], string> = {
   published: 'Publiées',
@@ -49,26 +50,27 @@ export default function SitesPage() {
 
   return (
     <Grid container spacing={2}>
-      <Grid size={{ xs: 12, xl: 8 }}>
-        <Card sx={{ height: '100%' }}>
-      <DataGrid
-        rows={sites.data ?? []}
-        columns={columns}
-        loading={sites.loading}
-        density="compact"
-        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-        disableRowSelectionOnClick
-        onRowClick={(p) => { setSiteId(String(p.id)); router.push('/dashboard'); }}
-        initialState={{ sorting: { sortModel: [{ field: 'latitude', sort: 'asc' }] } }}
-        sx={{ border: 0, '& .MuiDataGrid-row': { cursor: 'pointer' } }}
-      />
-      <Typography variant="caption" sx={{ display: 'block', p: 1.5, color: 'text.secondary' }}>
-        Coordonnées sélénographiques (Sud négatif, longitude Est positive). « indisponible » = valeur inconnue, jamais 0.
-      </Typography>
-        </Card>
+      <Grid size={{ xs: 12, lg: 7 }}><GlobeCard /></Grid>
+      <Grid size={{ xs: 12, lg: 5 }}>
+        <SouthPoleMap sites={sites.data ?? []} selectedId={siteId} onSelect={(id) => { setSiteId(id); router.push('/dashboard'); }} size={560} />
       </Grid>
-      <Grid size={{ xs: 12, xl: 4 }}>
-        <SouthPoleMap sites={sites.data ?? []} selectedId={siteId} onSelect={(id) => { setSiteId(id); router.push('/dashboard'); }} size={520} />
+      <Grid size={12}>
+        <Card>
+          <DataGrid
+            rows={sites.data ?? []}
+            columns={columns}
+            loading={sites.loading}
+            density="compact"
+            localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+            disableRowSelectionOnClick
+            onRowClick={(p) => { setSiteId(String(p.id)); router.push('/dashboard'); }}
+            initialState={{ sorting: { sortModel: [{ field: 'latitude', sort: 'asc' }] } }}
+            sx={{ border: 0, '& .MuiDataGrid-row': { cursor: 'pointer' } }}
+          />
+          <Typography variant="caption" sx={{ display: 'block', p: 1.5, color: 'text.secondary' }}>
+            Coordonnées sélénographiques (Sud négatif, longitude Est positive). « indisponible » = valeur inconnue, jamais 0.
+          </Typography>
+        </Card>
       </Grid>
     </Grid>
   );

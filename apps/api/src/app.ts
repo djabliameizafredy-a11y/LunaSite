@@ -10,6 +10,7 @@ import { earthAnalysis, gridFor, makePeriod, missionScore, solarAnalysis } from 
 import { compareWithHorizons, VALIDATION_NOTES } from './modules/validation/compare';
 import { getReference, referenceState } from './data/reference';
 import { TERRAIN_META, terrainInfo } from './data/terrain';
+import { bodyState, type Vec3 } from './engine/lunar-frame';
 
 const coords = z.object({
   lat: z.coerce.number().min(-90).max(90).optional(),
@@ -83,6 +84,19 @@ export function createApp() {
       maxRangeKm: TERRAIN_META?.maxRangeKm ?? null,
       source: t && TERRAIN_META ? { dataset: TERRAIN_META.dataset, product: TERRAIN_META.product, url: TERRAIN_META.url, resolutionM: TERRAIN_META.resolutionM } : null,
     };
+  }));
+
+  // Géométrie globale de la Lune à un instant : points subsolaire (terminateur jour/nuit) et subterrestre.
+  app.get('/api/moon/geometry', wrap((req) => {
+    const raw = typeof req.query.t === 'string' ? req.query.t : new Date().toISOString();
+    const t = new Date(raw);
+    if (Number.isNaN(t.getTime())) throw new HttpError(400, 'INVALID_INPUT', 't : date ISO 8601 attendue (ex. 2026-11-15T00:00:00Z)', 't');
+    const b = bodyState(t);
+    const latLon = (v: Vec3) => {
+      const r = Math.hypot(v[0], v[1], v[2]);
+      return { latDeg: Math.round(Math.asin(v[2] / r) * 180 / Math.PI * 1e4) / 1e4, lonDeg: Math.round(Math.atan2(v[1], v[0]) * 180 / Math.PI * 1e4) / 1e4 };
+    };
+    return { t: t.toISOString(), frame: 'Lune fixe (IAU), longitude Est', subSolar: latLon(b.sunMoonFixed), subEarth: latLon(b.earthMoonFixed) };
   }));
 
   app.get('/api/sites/:id/solar', wrap((req) => {
