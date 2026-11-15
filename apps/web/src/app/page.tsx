@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
+import { preload } from 'react-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -30,8 +31,11 @@ const QUESTIONS = [
 /** Accueil : hero vidéo (Lune et sites d'atterrissage), puis les 4 visualisations du défi. */
 export default function Home() {
   const video = useRef<HTMLVideoElement>(null);
+  // L'image de couverture est le candidat LCP de l'accueil : on la demande en priorité haute.
+  preload('/hero/poster.jpg', { as: 'image', fetchPriority: 'high' });
 
-  // Respecte « réduire les animations » : la vidéo reste sur son image de couverture.
+  // Pas d'attribut autoplay : la lecture ne démarre qu'ici, et seulement sans « réduire les animations »
+  // (sinon la vidéo bougerait un instant avant d'être mise en pause).
   useEffect(() => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
     const apply = () => { if (!video.current) return; if (reduce.matches) video.current.pause(); else void video.current.play().catch(() => {}); };
@@ -48,7 +52,9 @@ export default function Home() {
           ref={video}
           src="/hero/hero.mp4"
           poster="/hero/poster.jpg"
-          autoPlay
+          width={640}
+          height={360}
+          preload="metadata"
           muted
           loop
           playsInline

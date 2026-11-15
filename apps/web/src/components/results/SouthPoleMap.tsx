@@ -53,8 +53,9 @@ export function SouthPoleMap({ sites, selectedId, onSelect, size = 360 }: Props)
           </ToggleButtonGroup>
         </Stack>
 
-        <Box sx={{ width: '100%', maxWidth: size, mx: 'auto', aspectRatio: '1 / 1', borderRadius: 1, overflow: 'hidden', bgcolor: '#000' }}>
-          <svg viewBox={`${-half} ${-half} ${2 * half} ${2 * half}`} width="100%" height="100%" role="img"
+        <Box sx={{ width: '100%', maxWidth: size, mx: 'auto', aspectRatio: '1 / 1', borderRadius: 1, overflow: 'hidden', bgcolor: '#000',
+          '& g[role="button"]:focus-visible': { outline: '3px solid #fff', outlineOffset: '3px' } }}>
+          <svg viewBox={`${-half} ${-half} ${2 * half} ${2 * half}`} width="100%" height="100%" role="group"
             aria-label={`Carte du pôle Sud lunaire avec ${placed.length} sites candidats`}>
             <image href={IMG.src} x={IMG.originX} y={-IMG.originY} width={imgW} height={imgH} preserveAspectRatio="none" />
             <g fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth={unit * 0.35} strokeDasharray={`${unit * 1.5} ${unit}`}>
@@ -73,7 +74,7 @@ export function SouthPoleMap({ sites, selectedId, onSelect, size = 360 }: Props)
               return (
                 <g key={s.id} transform={`translate(${x} ${-y})`} style={{ cursor: onSelect ? 'pointer' : undefined }}
                   onClick={() => onSelect?.(s.id)} role="button" aria-label={s.name} tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect?.(s.id); }}>
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.(s.id); } }}>
                   <circle r={unit * (active ? 3.4 : 2.4)} fill={active ? 'hsl(38, 92%, 55%)' : 'hsl(210, 100%, 62%)'} stroke="#fff" strokeWidth={unit * 0.6} />
                   <title>{`${s.name} — ${s.latitude.toFixed(2)}°, ${s.longitude.toFixed(2)}°E`}</title>
                   {(active || zoom === 'pole') && (
