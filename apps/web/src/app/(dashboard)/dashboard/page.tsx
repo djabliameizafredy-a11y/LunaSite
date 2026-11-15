@@ -1,5 +1,5 @@
 'use client';
-import { Alert, Box, Grid, Skeleton, Stack, Typography } from '@mui/material';
+import { Alert, Box, Grid, Skeleton, Typography } from '@mui/material';
 import { api } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { fmtEnergy, fmtHours, fmtPct, stepFor } from '@/lib/format';
@@ -40,8 +40,8 @@ export default function Overview() {
   if (res.loading || !res.data) {
     return (
       <Grid container spacing={2}>
-        {[0, 1, 2, 3].map((i) => <Grid key={i} size={{ xs: 12, sm: 6, lg: 3 }}><Skeleton variant="rounded" height={160} /></Grid>)}
-        {[0, 1].map((i) => <Grid key={i} size={{ xs: 12, md: 6 }}><Skeleton variant="rounded" height={340} /></Grid>)}
+        {[0, 1, 2, 3].map((i) => <Grid key={i} size={{ xs: 12, sm: 6, xl: 3 }}><Skeleton variant="rounded" height={160} /></Grid>)}
+        {[0, 1].map((i) => <Grid key={i} size={{ xs: 12, lg: 6 }}><Skeleton variant="rounded" height={340} /></Grid>)}
       </Grid>
     );
   }
@@ -64,59 +64,58 @@ export default function Overview() {
       )}
 
       <Grid container spacing={2} columns={12} sx={{ mb: 2 }}>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
           <StatCard title="Soleil au-dessus de l'horizon" value={fmtPct(solar.sunlitFraction)} chip={chip}
             interval={`${fmtHours(solar.sunlitHours)} · plus longue nuit ${fmtHours(solar.longestDarknessHours)}`} color={SERIES.sun}
             help="Part du temps où le centre du Soleil est au-dessus de l'horizon du site."
             data={thin(solar.sunPosition.map((p) => p.elevationDeg))} />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
           <StatCard title="Terre visible" value={fmtPct(earth.visibleFraction)} chip={chip}
             interval={`${fmtHours(earth.visibleHours)} · plus longue coupure ${fmtHours(earth.longestVisibilityGapHours)}`} color={SERIES.earth}
             help="Part du temps où la Terre est au-dessus de l'horizon : communication directe géométriquement possible."
             data={thin(earth.earthPosition.map((p) => p.elevationDeg))} />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
           <StatCard title="Potentiel d'énergie" value={fmtEnergy(solar.energyPotential.indicativeEnergyWh)} chip={{ label: 'indicatif', color: 'default' }}
             interval={`panneau ${solar.energyPotential.parameters.panelAreaM2} m², rendement ${Math.round(solar.energyPotential.parameters.efficiency * 100)} %`}
             color={SERIES.sun}
             help="Énergie indicative d'un panneau illustratif sur la période (hypothèses détaillées plus bas)."
             data={thin(solar.sunPosition.map((p) => Math.max(0, p.elevationDeg)))} />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><HighlightCard /></Grid>
+        <Grid size={{ xs: 12, sm: 6, xl: 3 }}><HighlightCard /></Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <PositionChart title="1 · Position du Soleil" subtitle="Élévation et azimut par rapport à l'horizon du site" series={solar.sunPosition} color={SERIES.sun} meta={solar.meta} />
         </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <PositionChart title="2 · Position de la Terre" subtitle="Élévation et azimut par rapport à l'horizon du site" series={earth.earthPosition} color={SERIES.earth} meta={earth.meta} />
         </Grid>
       </Grid>
 
-      <Typography component="h2" variant="h6" sx={{ mb: 2 }}>Détails</Typography>
+      <Typography component="h2" variant="h6" sx={{ mt: 2, mb: 2 }}>Détails</Typography>
       <Grid container spacing={2} columns={12}>
-        <Grid size={{ xs: 12, lg: 9 }}>
-          <Stack sx={{ gap: 2 }}>
-            <WindowsTimeline
-              period={period}
-              meta={earth.meta}
-              rows={[
-                { label: 'Soleil visible', color: SERIES.sun, windows: solar.sunWindows },
-                { label: '4 · Communication (Terre)', color: SERIES.earth, windows: earth.windows },
-              ]}
-            />
-            <DailyHoursChart sun={solar.sunWindows} earth={earth.windows} period={period} sunColor={SERIES.sun} earthColor={SERIES.earth} />
-          </Stack>
+        {/* Frise pleine largeur : c'est elle qui a besoin d'espace (fenêtres sur toute la période). */}
+        <Grid size={12}>
+          <WindowsTimeline
+            period={period}
+            meta={earth.meta}
+            rows={[
+              { label: 'Soleil visible', color: SERIES.sun, windows: solar.sunWindows },
+              { label: '4 · Communication (Terre)', color: SERIES.earth, windows: earth.windows },
+            ]}
+          />
         </Grid>
-        <Grid size={{ xs: 12, lg: 3 }}>
-          <Stack direction={{ xs: 'column', sm: 'row', lg: 'column' }} sx={{ gap: 2 }}>
-            <SouthPoleMap sites={sites.data ?? []} selectedId={siteId} onSelect={setSiteId} />
-            <EnergyCard solar={solar} />
-            <ValidationCard siteId={siteId} />
-            <ScoreCard score={score} />
-            {selectedSite && <SiteInfoCard site={selectedSite} />}
-          </Stack>
+        <Grid size={{ xs: 12, lg: 7, xl: 8 }}>
+          <DailyHoursChart sun={solar.sunWindows} earth={earth.windows} period={period} sunColor={SERIES.sun} earthColor={SERIES.earth} />
         </Grid>
+        <Grid size={{ xs: 12, lg: 5, xl: 4 }}>
+          <SouthPoleMap sites={sites.data ?? []} selectedId={siteId} onSelect={setSiteId} size={520} />
+        </Grid>
+        <Grid size={{ xs: 12, md: 6, xl: 3 }}><EnergyCard solar={solar} /></Grid>
+        <Grid size={{ xs: 12, md: 6, xl: 3 }}><ScoreCard score={score} /></Grid>
+        <Grid size={{ xs: 12, md: 6, xl: 3 }}><ValidationCard siteId={siteId} /></Grid>
+        {selectedSite && <Grid size={{ xs: 12, md: 6, xl: 3 }}><SiteInfoCard site={selectedSite} /></Grid>}
       </Grid>
     </Box>
   );

@@ -14,6 +14,7 @@ import TableRowsRoundedIcon from '@mui/icons-material/TableRowsRounded';
 import CompareArrowsRoundedIcon from '@mui/icons-material/CompareArrowsRounded';
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
+import HelpOutlineRoundedIcon from '@mui/icons-material/HelpOutlineRounded';
 
 type Item = { text: string; href: string; icon: React.ReactNode; soon?: boolean };
 
@@ -26,7 +27,10 @@ const mainListItems: Item[] = [
   { text: 'Recommandations', href: '/recommendations', icon: <EmojiEventsRoundedIcon />, soon: true },
 ];
 
-const secondaryListItems: Item[] = [{ text: 'Données et limites', href: '/limits', icon: <InfoRoundedIcon /> }];
+const secondaryListItems: Item[] = [
+  { text: 'À propos', href: '/about', icon: <HelpOutlineRoundedIcon /> },
+  { text: 'Données et limites', href: '/limits', icon: <InfoRoundedIcon /> },
+];
 
 export default function MenuContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();

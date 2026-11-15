@@ -20,6 +20,7 @@ import SettingsInputAntennaRoundedIcon from '@mui/icons-material/SettingsInputAn
 import ColorModeIconDropdown from '@/shared-theme/ColorModeIconDropdown';
 import { CustomIcon } from '@/components/dashboard/AppNavbar';
 import { SERIES } from '@/theme/theme';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 
 const QUESTIONS = [
   { icon: <WbSunnyRoundedIcon />, color: SERIES.sun, title: 'Position du Soleil', text: "Élévation et azimut par rapport à l'horizon du site, heure par heure." },
@@ -130,9 +131,13 @@ export default function Home() {
             </Grid>
           ))}
         </Grid>
-        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 6, textAlign: 'center' }}>
-          Outil pédagogique, pas une recommandation opérationnelle d'atterrissage. Vidéo : rendu de l'équipe LunaSite.
-        </Typography>
+        <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1.5, mt: 5 }}>
+          <Button component={Link} href="/about" variant="outlined">Comment ça marche</Button>
+        </Stack>
+        <Typography variant="caption" component="p" sx={{ color: 'text.secondary', mt: 3 }}>Vidéo : rendu de l'équipe LunaSite.</Typography>
+      </Container>
+      <Container maxWidth="lg">
+        <SiteFooter />
       </Container>
     </Box>
   );

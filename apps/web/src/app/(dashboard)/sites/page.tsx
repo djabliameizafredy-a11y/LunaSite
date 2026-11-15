@@ -48,8 +48,8 @@ export default function SitesPage() {
 
   return (
     <Grid container spacing={2}>
-      <Grid size={{ xs: 12, lg: 8 }}>
-    <Card>
+      <Grid size={{ xs: 12, xl: 8 }}>
+        <Card sx={{ height: '100%' }}>
       <DataGrid
         rows={sites.data ?? []}
         columns={columns}
@@ -64,9 +64,9 @@ export default function SitesPage() {
       <Typography variant="caption" sx={{ display: 'block', p: 1.5, color: 'text.secondary' }}>
         Coordonnées sélénographiques (Sud négatif, longitude Est positive). « indisponible » = valeur inconnue, jamais 0.
       </Typography>
-    </Card>
+        </Card>
       </Grid>
-      <Grid size={{ xs: 12, lg: 4 }}>
+      <Grid size={{ xs: 12, xl: 4 }}>
         <SouthPoleMap sites={sites.data ?? []} selectedId={siteId} onSelect={(id) => { setSiteId(id); router.push('/dashboard'); }} size={520} />
       </Grid>
     </Grid>
