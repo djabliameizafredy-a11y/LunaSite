@@ -14,6 +14,8 @@ import { useAsync } from '@/lib/useAsync';
 import { fmtDateTimeUTC } from '@/lib/format';
 import { useDashboard } from '@/components/dashboard/DashboardState';
 import { useT } from '@/i18n';
+import { useState } from 'react';
+import type { TextureSource } from './MoonGlobe';
 
 const MoonGlobe = dynamic(() => import('./MoonGlobe'), {
   ssr: false,
@@ -26,6 +28,7 @@ export function GlobeCard() {
   const t = useT();
   const at = `${date}T00:00:00Z`;
   const geo = useAsync(() => api.moonGeometry(at), [at]);
+  const [texSource, setTexSource] = useState<TextureSource | null>(null);
   return (
     <Card variant="outlined" sx={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <CardContent sx={{ pb: 1 }}>
@@ -37,11 +40,11 @@ export function GlobeCard() {
       <Box sx={{ position: 'relative', flex: 1, minHeight: { xs: 340, md: 460 }, bgcolor: '#000' }}
         role="img" aria-label={t.globe.aria}>
         <MoonGlobe sites={sites.data ?? []} selectedId={siteId} onSelect={setSiteId} geometry={geo.data}
-          labels={{ sun: t.globe.sunLabel, earth: t.globe.earthLabel }} />
+          labels={{ sun: t.globe.sunLabel, earth: t.globe.earthLabel }} onTextureSource={setTexSource} />
       </Box>
       <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ px: 2, py: 1.5, gap: 1.5, alignItems: { sm: 'center' }, borderTop: '1px solid', borderColor: 'divider' }}>
         <Typography variant="caption" sx={{ color: 'text.secondary', mr: 'auto', lineHeight: 1.5 }}>
-          {t.globe.caption(fmtDateTimeUTC(at))}
+          {texSource === 'nasa' ? t.globe.captionReal(fmtDateTimeUTC(at)) : t.globe.caption(fmtDateTimeUTC(at))}
         </Typography>
         {selectedSite && (
           <Button component={NextLink} href="/dashboard" size="small" variant="outlined" endIcon={<ChevronRightRoundedIcon />} sx={{ flexShrink: 0 }}>

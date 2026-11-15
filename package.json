@@ -9,7 +9,9 @@
     "api:dev": "npm run dev -w @lunasite/api",
     "api:test": "npm run test -w @lunasite/api",
     "web:dev": "npm run dev -w @lunasite/web",
-    "web:build": "npm run build -w @lunasite/web"
+    "web:build": "npm run build -w @lunasite/web",
+    "api:start": "npm run start -w @lunasite/api",
+    "web:start": "npm run start -w @lunasite/web"
   },
   "allowScripts": {
     "prisma@7.10.1": true,
@@ -17,5 +19,8 @@
     "@prisma/client@7.10.1": true,
     "esbuild@0.28.2": true,
     "esbuild@0.21.5": true
+  },
+  "engines": {
+    "node": ">=20.19"
   }
 }

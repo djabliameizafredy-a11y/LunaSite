@@ -6,6 +6,7 @@ let nf0 = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 });
 let dtf = new Intl.DateTimeFormat(LOCALE, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 let df = new Intl.DateTimeFormat(LOCALE, { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 let dayf = new Intl.DateTimeFormat(LOCALE, { day: '2-digit', month: '2-digit', timeZone: 'UTC' });
+let dtsf = new Intl.DateTimeFormat(LOCALE, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC', hour12: false });
 let unavailable = 'indisponible';
 
 /** Appelé par I18nProvider à chaque changement de langue. */
@@ -16,6 +17,7 @@ export function setFormatLocale(locale: string) {
   dtf = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hour12: false });
   df = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
   dayf = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', timeZone: 'UTC' });
+  dtsf = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC', hour12: false });
   unavailable = locale.startsWith('fr') ? 'indisponible' : 'unavailable';
 }
 
@@ -36,6 +38,8 @@ export function fmtEnergy(wh: number | null | undefined) {
 }
 
 export const fmtDateTimeUTC = (iso: string | Date) => `${dtf.format(new Date(iso))} UTC`;
+/** Avec les secondes (vue en direct). */
+export const fmtDateTimeSecUTC = (iso: string | Date) => `${dtsf.format(new Date(iso))} UTC`;
 export const fmtDateUTC = (iso: string | Date) => df.format(new Date(iso));
 export const fmtDayShort = (iso: string | Date) => dayf.format(new Date(iso));
 

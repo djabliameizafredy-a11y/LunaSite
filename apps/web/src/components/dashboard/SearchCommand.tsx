@@ -16,7 +16,7 @@ import { useT } from '@/i18n';
 type Kind = 'Pages' | 'Visualisations' | 'Sites';
 type Entry = { kind: Kind; label: string; hint: string; keywords: string; href: string; siteId?: string };
 
-const PAGE_HREFS: Record<string, string> = { home: '/', overview: '/dashboard', horizon: '/horizon', catalogue: '/sites', limits: '/limits', about: '/about' };
+const PAGE_HREFS: Record<string, string> = { home: '/', overview: '/dashboard', horizon: '/horizon', catalogue: '/sites', compare: '/compare', recommendations: '/recommendations', limits: '/limits', about: '/about' };
 
 // Ancres posées dans la vue d'ensemble (le défilement est fait une fois les résultats chargés).
 const VIZ_IDS = ['soleil', 'terre', 'fenetres', 'energie', 'heures', 'carte', 'score', 'validation'];

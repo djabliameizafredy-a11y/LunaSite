@@ -38,6 +38,8 @@ export function SiteFooter() {
       { label: t.nav.overview, href: '/dashboard' },
       { label: t.nav.horizon, href: '/horizon' },
       { label: t.nav.catalogue, href: '/sites' },
+      { label: t.nav.compare, href: '/compare' },
+      { label: t.nav.recommendations, href: '/recommendations' },
       { label: t.nav.limits, href: '/limits' },
       { label: t.nav.about, href: '/about' },
     ] },

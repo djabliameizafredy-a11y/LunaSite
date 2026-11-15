@@ -2,15 +2,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
-  Alert, Box, Button, Card, CardContent, Chip, FormControlLabel, Grid, IconButton, MenuItem, Select, Skeleton, Slider, Stack, Switch, Tooltip, Typography,
+  Alert, Box, Button, Card, CardContent, Chip, FormControlLabel, Grid, Skeleton, Slider, Stack, Switch, Typography,
 } from '@mui/material';
-import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
-import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
+import { keyframes } from '@mui/material/styles';
 import WbSunnyRoundedIcon from '@mui/icons-material/WbSunnyRounded';
 import PublicRoundedIcon from '@mui/icons-material/PublicRounded';
 import { api } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
-import { fmtDateTimeUTC, fmtDeg, stepFor } from '@/lib/format';
+import { fmtDateTimeSecUTC, fmtDateTimeUTC, fmtDeg } from '@/lib/format';
+import type { TimeSeriesPoint } from '@lunasite/shared-types';
 import { SERIES } from '@/theme/theme';
 import { useDashboard } from '@/components/dashboard/DashboardState';
 import type { LookState } from '@/components/horizon/HorizonScene';
@@ -32,7 +32,23 @@ function horizonAt(skyline: number[] | null, az: number): number {
   return skyline[i] * (1 - f) + skyline[(i + 1) % n] * f;
 }
 
-const SPEEDS = [1, 3, 8];
+/** Pas des séries demandées pour la vue en direct (interpolées ensuite à la seconde). */
+const LIVE_STEP_MIN = 10;
+const pulse = keyframes`0% { opacity: 1; } 50% { opacity: 0.25; } 100% { opacity: 1; }`;
+
+/** Position à l'instant `ms` par interpolation linéaire entre deux échantillons (azimut : par le plus court chemin). */
+function interpolate(series: TimeSeriesPoint[], ms: number): { az: number; el: number } | null {
+  if (!series.length) return null;
+  const t0 = Date.parse(series[0].t);
+  const step = series.length > 1 ? Date.parse(series[1].t) - t0 : 1;
+  const x = (ms - t0) / step;
+  if (x < 0 || x > series.length - 1) return null;
+  const i = Math.min(Math.floor(x), Math.max(series.length - 2, 0));
+  const f = x - i;
+  const a = series[i], b = series[Math.min(i + 1, series.length - 1)];
+  const dAz = ((((b.azimuthDeg - a.azimuthDeg) % 360) + 540) % 360) - 180;
+  return { az: (((a.azimuthDeg + dAz * f) % 360) + 360) % 360, el: a.elevationDeg + (b.elevationDeg - a.elevationDeg) * f };
+}
 
 function BodyCard({ name, icon, color, az, el, horizon, terrain }: {
   name: string; icon: React.ReactNode; color: string; az: number; el: number; horizon: number; terrain: boolean;
@@ -59,50 +75,44 @@ function BodyCard({ name, icon, color, az, el, horizon, terrain }: {
   );
 }
 
-/** Vue horizon 3D : le ciel du site (Soleil, Terre) au-dessus de la vraie ligne de crête LOLA, sur la période choisie. */
+/**
+ * Vue horizon 3D EN DIRECT : le ciel du site (Soleil, Terre) à l'instant présent, au-dessus de la vraie ligne de crête LOLA.
+ * Les séries sont calculées par l'API sur [aujourd'hui 00:00 UTC, +2 jours) puis interpolées chaque seconde : pas de lecture manuelle.
+ */
 export default function HorizonPage() {
-  const { siteId, date, days, selectedSite } = useDashboard();
+  const { siteId, selectedSite } = useDashboard();
   const t = useT();
   const h = t.horizon;
-  const params = { date, days, stepMinutes: stepFor(days) };
-  const res = useAsync(
-    () => Promise.all([api.solar(siteId, params), api.earth(siteId, params), api.horizon(siteId)]),
-    [siteId, date, days],
-  );
 
-  const [i, setI] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
+  // Horloge : une mise à jour par seconde.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  // Jour UTC courant : change à minuit UTC et relance le calcul (la fenêtre de 2 jours couvre toujours les 24 h à venir).
+  const liveDay = new Date(now).toISOString().slice(0, 10);
+
+  const res = useAsync(() => {
+    const params = { date: liveDay, days: 2, stepMinutes: LIVE_STEP_MIN };
+    return Promise.all([api.solar(siteId, params), api.earth(siteId, params), api.horizon(siteId)]);
+  }, [siteId, liveDay]);
+
   const [exaggeration, setExaggeration] = useState(6);
   const [showGrid, setShowGrid] = useState(true);
   const look = useRef<LookState>({ yaw: 180, pitch: 4, fov: 60 });
 
   const data = res.data;
-  const n = data ? Math.min(data[0].sunPosition.length, data[1].earthPosition.length) : 0;
   const skyline = data?.[2].available ? data[2].elevationDeg : null;
 
-  // Nouveau site / nouvelle période : on repart du début, caméra tournée vers le Soleil.
+  // Nouveau site : caméra tournée vers le Soleil (une fois par site, pas à chaque recalcul de minuit).
+  const aimedFor = useRef<string | null>(null);
   useEffect(() => {
-    setI(0);
-    setPlaying(false);
-    if (data) look.current.yaw = data[0].sunPosition[0]?.azimuthDeg ?? 180;
-  }, [data]);
-
-  // Lecture : avance d'un nombre de pas par image (requestAnimationFrame, s'arrête en fin de période).
-  useEffect(() => {
-    if (!playing || n === 0) return;
-    let raf = 0;
-    let last = 0;
-    const tick = (t: number) => {
-      if (t - last > 60) {
-        last = t;
-        setI((k) => { const next = k + speed; if (next >= n - 1) { setPlaying(false); return n - 1; } return next; });
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [playing, speed, n]);
+    if (!data || aimedFor.current === siteId) return;
+    aimedFor.current = siteId;
+    const s = interpolate(data[0].sunPosition, Date.now());
+    look.current.yaw = s?.az ?? data[0].sunPosition[0]?.azimuthDeg ?? 180;
+  }, [data, siteId]);
 
   // Regard : glisser pour tourner, molette pour zoomer, flèches au clavier.
   const drag = useRef<{ x: number; y: number } | null>(null);
@@ -133,16 +143,11 @@ export default function HorizonPage() {
   const aim = useCallback((az: number, el: number) => { look.current.yaw = az; look.current.pitch = Math.max(-5, Math.min(60, el)); }, []);
 
   const frame = useMemo(() => {
-    if (!data || n === 0) return null;
-    const k = Math.min(i, n - 1);
-    const s = data[0].sunPosition[k];
-    const e = data[1].earthPosition[k];
-    return {
-      t: s.t,
-      sun: { az: s.azimuthDeg, el: s.elevationDeg },
-      earth: { az: e.azimuthDeg, el: e.elevationDeg },
-    };
-  }, [data, i, n]);
+    if (!data) return null;
+    const sun = interpolate(data[0].sunPosition, now);
+    const earth = interpolate(data[1].earthPosition, now);
+    return sun && earth ? { t: new Date(now).toISOString(), sun, earth } : null;
+  }, [data, now]);
 
   if (res.error) return <ErrorState title={t.overview.calcFailed} error={res.error} />;
 
@@ -167,7 +172,7 @@ export default function HorizonPage() {
           ref={viewport}
           tabIndex={0}
           role="application"
-          aria-label={h.viewAria}
+          aria-label={`${h.liveAria}. ${h.viewAria}`}
           onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
           onKeyDown={onKeyDown}
           sx={{ position: 'relative', height: { xs: 360, md: '58vh' }, minHeight: 320, bgcolor: '#000', cursor: 'grab', touchAction: 'none',
@@ -178,29 +183,20 @@ export default function HorizonPage() {
             : <Skeleton variant="rectangular" sx={{ width: '100%', height: '100%', bgcolor: '#0b0b0b' }} />}
           {frame && (
             <Box sx={{ position: 'absolute', left: 12, top: 12, px: 1.25, py: 0.75, borderRadius: 1, bgcolor: 'rgba(0,0,0,0.6)', color: '#fff', pointerEvents: 'none' }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtDateTimeUTC(frame.t)}</Typography>
+              <Stack direction="row" sx={{ alignItems: 'center', gap: 0.75 }}>
+                <Box aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444', animation: `${pulse} 1.6s ease-in-out infinite`, '@media (prefers-reduced-motion: reduce)': { animation: 'none' } }} />
+                <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: 1, color: '#fca5a5' }}>{h.live}</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtDateTimeSecUTC(frame.t)}</Typography>
+              </Stack>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>{h.enlarged(exaggeration)}</Typography>
             </Box>
           )}
         </Box>
 
         <Stack direction={{ xs: 'column', md: 'row' }} sx={{ gap: { xs: 1.5, md: 2.5 }, alignItems: { md: 'center' }, px: 2, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Stack direction="row" sx={{ alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
-            <Tooltip title={playing ? h.pause : h.play}>
-              <span>
-                <IconButton onClick={() => { if (i >= n - 1) setI(0); setPlaying((p) => !p); }} disabled={!frame} aria-label={playing ? h.pause : h.play}>
-                  {playing ? <PauseRoundedIcon /> : <PlayArrowRoundedIcon />}
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Slider size="small" min={0} max={Math.max(n - 1, 0)} value={Math.min(i, Math.max(n - 1, 0))} disabled={!frame}
-              onChange={(_e, v) => { setPlaying(false); setI(v as number); }}
-              aria-label={h.instant} getAriaValueText={() => (frame ? fmtDateTimeUTC(frame.t) : '')}
-              valueLabelDisplay="off" sx={{ flex: 1 }} />
-            <Select size="small" value={speed} onChange={(e) => setSpeed(Number(e.target.value))} inputProps={{ 'aria-label': h.speed }}>
-              {SPEEDS.map((v, k) => <MenuItem key={v} value={v}>{h.speeds[k]}</MenuItem>)}
-            </Select>
-          </Stack>
+          <Typography variant="caption" sx={{ flex: 1, minWidth: 0, color: 'text.secondary', lineHeight: 1.5 }}>
+            {frame ? h.liveNote(fmtDateTimeUTC(frame.t)) : h.liveAria}
+          </Typography>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Button size="small" variant="outlined" startIcon={<WbSunnyRoundedIcon sx={{ color: SERIES.sun }} />} disabled={!frame}
               onClick={() => frame && aim(frame.sun.az, frame.sun.el)}>{h.aimSun}</Button>
@@ -232,6 +228,7 @@ export default function HorizonPage() {
               <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
                 {h.how(data?.[2].maxRangeKm ? h.upTo(data[2].maxRangeKm) : '')}
               </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6, mt: 1 }}>{h.liveHelp}</Typography>
             </CardContent>
           </Card>
         </Grid>

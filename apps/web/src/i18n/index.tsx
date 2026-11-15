@@ -51,7 +51,7 @@ export function I18nProvider({ children }: { children: (locale: Locale) => React
 export const useI18n = () => useContext(Ctx);
 export const useT = () => useContext(Ctx).t;
 
-const TITLE_KEYS: Record<string, keyof Dict['nav']> = { '/dashboard': 'overview', '/horizon': 'horizon', '/sites': 'catalogue', '/limits': 'limits', '/about': 'about' };
+const TITLE_KEYS: Record<string, keyof Dict['nav']> = { '/dashboard': 'overview', '/horizon': 'horizon', '/sites': 'catalogue', '/limits': 'limits', '/about': 'about', '/compare': 'compare', '/recommendations': 'recommendations' };
 
 /** Met à jour le titre de l'onglet dans la langue choisie. */
 export function DocumentTitle() {

@@ -21,7 +21,7 @@ const StyledBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
   [`& .${breadcrumbsClasses.ol}`]: { alignItems: 'center' },
 }));
 
-const TITLE_KEYS = { '/dashboard': 'overview', '/sites': 'catalogue', '/limits': 'limits', '/about': 'about', '/horizon': 'horizon' } as const;
+const TITLE_KEYS = { '/dashboard': 'overview', '/sites': 'catalogue', '/limits': 'limits', '/about': 'about', '/horizon': 'horizon', '/compare': 'compare', '/recommendations': 'recommendations' } as const;
 
 // Repris de Header.tsx du template : fil d'Ariane à gauche ; à droite, période (au lieu de Search + notifications) et thème.
 export default function Header() {
@@ -50,7 +50,8 @@ export default function Header() {
       <Stack direction="row" sx={{ gap: 1 }}>
         <SearchCommand />
         <LanguageSwitch />
-        <PeriodControls days={days} setDays={setDays} />
+        {/* La vue Horizon 3D est en direct : la période n'y a pas d'effet. */}
+        {pathname !== '/horizon' && <PeriodControls days={days} setDays={setDays} />}
         <ColorModeIconDropdown />
       </Stack>
     </Stack>

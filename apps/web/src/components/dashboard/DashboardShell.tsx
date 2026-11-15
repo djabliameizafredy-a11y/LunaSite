@@ -7,10 +7,12 @@ import AppNavbar from './AppNavbar';
 import Header, { PeriodControls } from './Header';
 import { useDashboard } from './DashboardState';
 import { SiteFooter } from '@/components/layout/SiteFooter';
+import { usePathname } from 'next/navigation';
 
 /** Structure de Dashboard.tsx du template : SideMenu + AppNavbar + main (Header puis contenu). */
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { days, setDays } = useDashboard();
+  const live = usePathname() === '/horizon';
   return (
     <Box sx={{ display: 'flex' }}>
       <SideMenu />
@@ -27,9 +29,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       >
         <Stack spacing={2} sx={{ alignItems: 'center', mx: { xs: 2, md: 3 }, pb: 0, mt: { xs: 10, md: 0 } }}>
           <Header />
-          <Stack direction="row" sx={{ display: { xs: 'flex', md: 'none' }, gap: 1, width: '100%', flexWrap: 'wrap' }}>
-            <PeriodControls days={days} setDays={setDays} />
-          </Stack>
+          {!live && (
+            <Stack direction="row" sx={{ display: { xs: 'flex', md: 'none' }, gap: 1, width: '100%', flexWrap: 'wrap' }}>
+              <PeriodControls days={days} setDays={setDays} />
+            </Stack>
+          )}
           <Box sx={{ width: '100%', maxWidth: { sm: '100%', md: '1700px' } }}>
             {children}
             <SiteFooter />

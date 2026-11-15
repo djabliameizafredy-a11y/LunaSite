@@ -26,8 +26,8 @@ const mainListItems: Item[] = [
   { key: 'overview', href: '/dashboard', icon: <AnalyticsRoundedIcon /> },
   { key: 'horizon', href: '/horizon', icon: <LandscapeRoundedIcon /> },
   { key: 'catalogue', href: '/sites', icon: <TableRowsRoundedIcon /> },
-  { key: 'compare', href: '/compare', icon: <CompareArrowsRoundedIcon />, soon: true },
-  { key: 'recommendations', href: '/recommendations', icon: <EmojiEventsRoundedIcon />, soon: true },
+  { key: 'compare', href: '/compare', icon: <CompareArrowsRoundedIcon /> },
+  { key: 'recommendations', href: '/recommendations', icon: <EmojiEventsRoundedIcon /> },
 ];
 
 const secondaryListItems: Item[] = [

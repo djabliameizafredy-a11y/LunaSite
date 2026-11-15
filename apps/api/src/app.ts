@@ -48,7 +48,9 @@ const wrap = (fn: (req: Request, res: Response) => unknown) => (req: Request, re
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
-  app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? true }));
+  // CORS_ORIGIN : liste d'origines séparées par des virgules ; absente = toutes (API publique en lecture, sans cookie).
+  const origins = process.env.CORS_ORIGIN?.split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean);
+  app.use(cors({ origin: origins?.length ? origins : true }));
   app.use(express.json({ limit: '50kb' }));
   app.use((req, res, next) => { res.locals.requestId = randomUUID(); res.setHeader('X-Request-Id', res.locals.requestId); next(); });
 
