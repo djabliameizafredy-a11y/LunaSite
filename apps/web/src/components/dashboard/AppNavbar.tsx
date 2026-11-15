@@ -12,6 +12,7 @@ import NightlightRoundedIcon from '@mui/icons-material/NightlightRounded';
 import SideMenuMobile from './SideMenuMobile';
 import MenuButton from './MenuButton';
 import ColorModeIconDropdown from '@/shared-theme/ColorModeIconDropdown';
+import { SearchCommand } from './SearchCommand';
 
 const Toolbar = styled(MuiToolbar)({
   width: '100%',
@@ -49,6 +50,7 @@ export default function AppNavbar() {
             <CustomIcon />
             <Typography variant="h4" component="h1" sx={{ color: 'text.primary' }}>LunaSite</Typography>
           </Stack>
+          <SearchCommand compact />
           <ColorModeIconDropdown />
           <MenuButton aria-label="menu" onClick={toggleDrawer(true)}>
             <MenuRoundedIcon />

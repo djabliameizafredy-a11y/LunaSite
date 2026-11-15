@@ -21,6 +21,8 @@ import ColorModeIconDropdown from '@/shared-theme/ColorModeIconDropdown';
 import { CustomIcon } from '@/components/dashboard/AppNavbar';
 import { SERIES } from '@/theme/theme';
 import { SiteFooter } from '@/components/layout/SiteFooter';
+import { SearchCommand } from '@/components/dashboard/SearchCommand';
+import { FadeIn, HorizonLine, RiseLine } from '@/components/motion/motion';
 
 const QUESTIONS = [
   { icon: <WbSunnyRoundedIcon />, color: SERIES.sun, title: 'Position du Soleil', text: "Élévation et azimut par rapport à l'horizon du site, heure par heure." },
@@ -78,19 +80,25 @@ export default function Home() {
           <Stack direction="row" sx={{ alignItems: 'center', py: 2.5, gap: 1 }}>
             <CustomIcon />
             <Typography variant="h6" component="p" sx={{ fontWeight: 700, mr: 'auto' }}>LunaSite</Typography>
+            <Box sx={{ color: '#fff' }}><SearchCommand compact /></Box>
             <Button component={Link} href="/dashboard" size="small" sx={{ color: '#fff' }}>Dashboard</Button>
             <ColorModeIconDropdown />
           </Stack>
 
-          <Stack sx={{ maxWidth: 620, pt: { xs: '18vh', md: '20vh' }, pb: 8, gap: 3 }}>
-            <Chip label="NASA Space Apps 2026 · Défi CLPS" size="small" sx={{ alignSelf: 'flex-start', color: '#fff', borderColor: 'rgba(255,255,255,0.35)', bgcolor: 'rgba(255,255,255,0.08)' }} variant="outlined" />
+          <Stack sx={{ maxWidth: 760, pt: { xs: '18vh', md: '20vh' }, pb: 8, gap: 3 }}>
+            <FadeIn sx={{ alignSelf: 'flex-start' }}><Chip label="NASA Space Apps 2026 · Défi CLPS" size="small" sx={{ alignSelf: 'flex-start', color: '#fff', borderColor: 'rgba(255,255,255,0.35)', bgcolor: 'rgba(255,255,255,0.08)' }} variant="outlined" /></FadeIn>
             <Typography component="h1" sx={{ fontSize: { xs: '2.4rem', md: '3.6rem' }, fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.02em' }}>
-              Où se poser au pôle Sud de la Lune ?
+              <RiseLine delay={350}>Où se poser au pôle Sud</RiseLine>
+              <RiseLine delay={440}>de la Lune ?</RiseLine>
             </Typography>
+            <HorizonLine color={SERIES.sun} delay={120} />
+            <FadeIn delay={650}>
             <Typography sx={{ fontSize: { xs: '1rem', md: '1.15rem' }, color: 'rgba(255,255,255,0.8)', maxWidth: 520 }}>
               Comparez les sites d'atterrissage et les dates : Soleil, Terre, énergie et fenêtres de communication,
               calculés à partir du relief NASA LOLA.
             </Typography>
+            </FadeIn>
+            <FadeIn delay={720}>
             <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1.5 }}>
               <Button component={Link} href="/dashboard" variant="contained" size="large" endIcon={<ChevronRightRoundedIcon />}>
                 Explorer les sites
@@ -100,6 +108,8 @@ export default function Home() {
                 Voir le catalogue
               </Button>
             </Stack>
+            </FadeIn>
+            <FadeIn delay={800}>
             <Stack direction="row" sx={{ gap: 3, flexWrap: 'wrap', pt: 1 }}>
               {[['13', "sites d'atterrissage"], ['9', 'avec relief LOLA'], ['4', 'visualisations']].map(([n, l]) => (
                 <Box key={l}>
@@ -108,6 +118,7 @@ export default function Home() {
                 </Box>
               ))}
             </Stack>
+            </FadeIn>
           </Stack>
         </Container>
       </Box>

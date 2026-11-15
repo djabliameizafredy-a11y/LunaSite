@@ -1,5 +1,5 @@
 'use client';
-import { Alert, Box, Grid, Skeleton, Typography } from '@mui/material';
+import { Alert, Grid, Skeleton, Typography } from '@mui/material';
 import { api } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { fmtEnergy, fmtHours, fmtPct, stepFor } from '@/lib/format';
@@ -15,6 +15,8 @@ import { ScoreCard } from '@/components/results/ScoreCard';
 import { SiteInfoCard } from '@/components/results/SiteInfoCard';
 import { SouthPoleMap } from '@/components/results/SouthPoleMap';
 import { ValidationCard } from '@/components/results/ValidationCard';
+import { FadeIn } from '@/components/motion/motion';
+import { useEffect } from 'react';
 
 /** Sous-échantillonne une série pour les mini-courbes (le graphique principal garde tous les points). */
 const thin = (v: number[], max = 60) => (v.length <= max ? v : v.filter((_, i) => i % Math.ceil(v.length / max) === 0));
@@ -35,6 +37,15 @@ export default function Overview() {
     [siteId, date, days],
   );
 
+  // Arrivée depuis la recherche (/dashboard#ancre) : on défile une fois les résultats affichés.
+  const ready = Boolean(res.data);
+  useEffect(() => {
+    if (!ready || !window.location.hash) return;
+    const el = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  }, [ready]);
+
   if (sites.error) return <Alert severity="error">Catalogue indisponible : {sites.error.message}</Alert>;
   if (res.error) return <Alert severity="error">Calcul impossible : {res.error.message}</Alert>;
   if (res.loading || !res.data) {
@@ -51,7 +62,7 @@ export default function Overview() {
   const chip = LEVEL_CHIP[solar.meta.calculationLevel];
 
   return (
-    <Box>
+    <FadeIn sx={{ '& [id]': { scrollMarginTop: { xs: 96, md: 24 } } }}>
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
         Vue d'ensemble{selectedSite ? ` — ${selectedSite.name}` : ''}
       </Typography>
@@ -65,30 +76,30 @@ export default function Overview() {
 
       <Grid container spacing={2} columns={12} sx={{ mb: 2 }}>
         <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-          <StatCard title="Soleil au-dessus de l'horizon" value={fmtPct(solar.sunlitFraction)} chip={chip}
+          <FadeIn index={0} sx={{ height: '100%' }}><StatCard title="Soleil au-dessus de l'horizon" value={fmtPct(solar.sunlitFraction)} chip={chip}
             interval={`${fmtHours(solar.sunlitHours)} · plus longue nuit ${fmtHours(solar.longestDarknessHours)}`} color={SERIES.sun}
             help="Part du temps où le centre du Soleil est au-dessus de l'horizon du site."
-            data={thin(solar.sunPosition.map((p) => p.elevationDeg))} />
+            data={thin(solar.sunPosition.map((p) => p.elevationDeg))} /></FadeIn>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-          <StatCard title="Terre visible" value={fmtPct(earth.visibleFraction)} chip={chip}
+          <FadeIn index={1} sx={{ height: '100%' }}><StatCard title="Terre visible" value={fmtPct(earth.visibleFraction)} chip={chip}
             interval={`${fmtHours(earth.visibleHours)} · plus longue coupure ${fmtHours(earth.longestVisibilityGapHours)}`} color={SERIES.earth}
             help="Part du temps où la Terre est au-dessus de l'horizon : communication directe géométriquement possible."
-            data={thin(earth.earthPosition.map((p) => p.elevationDeg))} />
+            data={thin(earth.earthPosition.map((p) => p.elevationDeg))} /></FadeIn>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-          <StatCard title="Potentiel d'énergie" value={fmtEnergy(solar.energyPotential.indicativeEnergyWh)} chip={{ label: 'indicatif', color: 'default' }}
+          <FadeIn index={2} sx={{ height: '100%' }}><StatCard title="Potentiel d'énergie" value={fmtEnergy(solar.energyPotential.indicativeEnergyWh)} chip={{ label: 'indicatif', color: 'default' }}
             interval={`panneau ${solar.energyPotential.parameters.panelAreaM2} m², rendement ${Math.round(solar.energyPotential.parameters.efficiency * 100)} %`}
             color={SERIES.sun}
             help="Énergie indicative d'un panneau illustratif sur la période (hypothèses détaillées plus bas)."
-            data={thin(solar.sunPosition.map((p) => Math.max(0, p.elevationDeg)))} />
+            data={thin(solar.sunPosition.map((p) => Math.max(0, p.elevationDeg)))} /></FadeIn>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, xl: 3 }}><HighlightCard /></Grid>
+        <Grid size={{ xs: 12, sm: 6, xl: 3 }}><FadeIn index={3} sx={{ height: '100%' }}><HighlightCard /></FadeIn></Grid>
 
-        <Grid size={{ xs: 12, lg: 6 }}>
+        <Grid id="soleil" size={{ xs: 12, lg: 6 }}>
           <PositionChart title="1 · Position du Soleil" subtitle="Élévation et azimut par rapport à l'horizon du site" series={solar.sunPosition} color={SERIES.sun} meta={solar.meta} />
         </Grid>
-        <Grid size={{ xs: 12, lg: 6 }}>
+        <Grid id="terre" size={{ xs: 12, lg: 6 }}>
           <PositionChart title="2 · Position de la Terre" subtitle="Élévation et azimut par rapport à l'horizon du site" series={earth.earthPosition} color={SERIES.earth} meta={earth.meta} />
         </Grid>
       </Grid>
@@ -96,7 +107,7 @@ export default function Overview() {
       <Typography component="h2" variant="h6" sx={{ mt: 2, mb: 2 }}>Détails</Typography>
       <Grid container spacing={2} columns={12}>
         {/* Frise pleine largeur : c'est elle qui a besoin d'espace (fenêtres sur toute la période). */}
-        <Grid size={12}>
+        <Grid id="fenetres" size={12}>
           <WindowsTimeline
             period={period}
             meta={earth.meta}
@@ -106,17 +117,17 @@ export default function Overview() {
             ]}
           />
         </Grid>
-        <Grid size={{ xs: 12, lg: 7, xl: 8 }}>
+        <Grid id="heures" size={{ xs: 12, lg: 7, xl: 8 }}>
           <DailyHoursChart sun={solar.sunWindows} earth={earth.windows} period={period} sunColor={SERIES.sun} earthColor={SERIES.earth} />
         </Grid>
-        <Grid size={{ xs: 12, lg: 5, xl: 4 }}>
+        <Grid id="carte" size={{ xs: 12, lg: 5, xl: 4 }}>
           <SouthPoleMap sites={sites.data ?? []} selectedId={siteId} onSelect={setSiteId} size={520} />
         </Grid>
-        <Grid size={{ xs: 12, md: 6, xl: 3 }}><EnergyCard solar={solar} /></Grid>
-        <Grid size={{ xs: 12, md: 6, xl: 3 }}><ScoreCard score={score} /></Grid>
-        <Grid size={{ xs: 12, md: 6, xl: 3 }}><ValidationCard siteId={siteId} /></Grid>
+        <Grid id="energie" size={{ xs: 12, md: 6, xl: 3 }}><EnergyCard solar={solar} /></Grid>
+        <Grid id="score" size={{ xs: 12, md: 6, xl: 3 }}><ScoreCard score={score} /></Grid>
+        <Grid id="validation" size={{ xs: 12, md: 6, xl: 3 }}><ValidationCard siteId={siteId} /></Grid>
         {selectedSite && <Grid size={{ xs: 12, md: 6, xl: 3 }}><SiteInfoCard site={selectedSite} /></Grid>}
       </Grid>
-    </Box>
+    </FadeIn>
   );
 }

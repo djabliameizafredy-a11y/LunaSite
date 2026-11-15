@@ -10,6 +10,7 @@ import NavigateNextRoundedIcon from '@mui/icons-material/NavigateNextRounded';
 import ColorModeIconDropdown from '@/shared-theme/ColorModeIconDropdown';
 import CustomDatePicker from './CustomDatePicker';
 import { useDashboard } from './DashboardState';
+import { SearchCommand } from './SearchCommand';
 
 // Repris de NavbarBreadcrumbs.tsx du template.
 const StyledBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
@@ -45,6 +46,7 @@ export default function Header() {
         <Typography variant="body1" sx={{ color: 'text.primary', fontWeight: 600 }}>{TITLES[pathname] ?? ''}</Typography>
       </StyledBreadcrumbs>
       <Stack direction="row" sx={{ gap: 1 }}>
+        <SearchCommand />
         <PeriodControls days={days} setDays={setDays} />
         <ColorModeIconDropdown />
       </Stack>
