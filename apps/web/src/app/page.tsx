@@ -78,7 +78,7 @@ export default function Home() {
 
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
           <Stack direction="row" sx={{ alignItems: 'center', py: 2.5, gap: 1 }}>
-            <CustomIcon />
+            <CustomIcon color="#fff" size="2rem" />
             <Typography variant="h6" component="p" sx={{ fontWeight: 700, mr: 'auto' }}>LunaSite</Typography>
             <Box sx={{ color: '#fff' }}><SearchCommand compact /></Box>
             <Button component={Link} href="/dashboard" size="small" sx={{ color: '#fff' }}>Dashboard</Button>
