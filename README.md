@@ -127,7 +127,7 @@ Pages : accueil, vue d'ensemble, **Horizon 3D en direct** (ciel du site à l'ins
 sans lecture manuelle), catalogue + globe 3D, **Comparer** (2 à 4 sites sur une période, ou un site à 2–4 dates,
 `POST /api/compare`), **Recommandations** (classement, `GET /api/recommendations`), à propos, données et limites.
 Globe 3D : texture chargée comme dans le prototype de Fredy (lunascope-mui) depuis `apps/web/public/textures/moon_equirect.jpg`
-(mosaïque NASA LROC WAC, voir le README de ce dossier) ; si l'image manque, repli automatique sur la texture procédurale.
+(texture Solar System Scope CC BY 4.0, voir le README de ce dossier) ; si l'image manque, repli automatique sur la texture procédurale.
 
 ## Déploiement sur Render
 

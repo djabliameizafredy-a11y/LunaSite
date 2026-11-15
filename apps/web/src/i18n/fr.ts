@@ -276,7 +276,7 @@ export const fr = {
     sunLabel: 'Soleil au zénith',
     earthLabel: 'Terre au zénith',
     caption: (t: string) => `Éclairage réel au ${t} (point subsolaire calculé) · texture du sol illustrative, pas une mosaïque NASA.`,
-    captionReal: (t: string) => `Éclairage réel au ${t} (point subsolaire calculé) · mosaïque NASA LRO / LROC WAC (CGI Moon Kit, NASA SVS).`,
+    captionReal: (t: string) => `Éclairage réel au ${t} (point subsolaire calculé) · texture Solar System Scope (CC BY 4.0), d'après les données NASA LRO.`,
     open: (name: string) => `Ouvrir ${name}`,
   },
   horizon: {
@@ -359,6 +359,7 @@ export const fr = {
       ['NASA Moon Trek (WMTS)', 'Fonds de carte lunaires'],
       ['JPL Horizons', 'Référence de validation des positions Soleil / Terre'],
       ['LROC QuickMap', 'Image du pôle Sud (export géoréférencé) et exploration visuelle complémentaire'],
+      ['Solar System Scope — texture lunaire 2k (CC BY 4.0)', 'Texture du globe 3D, d’après les données NASA LRO'],
       ['Agence spatiale canadienne — exploration lunaire', 'Contexte : programmes et missions lunaires ; photos de la page d’accueil'],
     ] as [string, string][],
     assumptionsTitle: "Hypothèses de calcul (renvoyées par l'API)",

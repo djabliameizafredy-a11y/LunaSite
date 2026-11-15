@@ -278,7 +278,7 @@ export const en: Dict = {
     sunLabel: 'Sun at zenith',
     earthLabel: 'Earth at zenith',
     caption: (t: string) => `Real lighting at ${t} (computed subsolar point) · illustrative surface texture, not a NASA mosaic.`,
-    captionReal: (t: string) => `Real lighting at ${t} (computed subsolar point) · NASA LRO / LROC WAC mosaic (CGI Moon Kit, NASA SVS).`,
+    captionReal: (t: string) => `Real lighting at ${t} (computed subsolar point) · Solar System Scope texture (CC BY 4.0), based on NASA LRO data.`,
     open: (name: string) => `Open ${name}`,
   },
   horizon: {
@@ -357,6 +357,7 @@ export const en: Dict = {
     cols: ['Site', 'Sun: elevation', 'Sun: azimuth', 'Earth: elevation', 'Earth: azimuth', 'Instants'],
     sourcesTitle: 'Data sources',
     sources: [
+      ['Solar System Scope — 2k Moon texture (CC BY 4.0)', '3D globe texture, based on NASA LRO data'],
       ['NASA PDS — LOLA (LRO), 80 m South polar DEM', 'Terrain, slopes and horizon profiles'],
       ['NASA Moon Trek (WMTS)', 'Lunar base maps'],
       ['JPL Horizons', 'Validation reference for Sun / Earth positions'],
