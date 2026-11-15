@@ -7,6 +7,7 @@ import { frFR } from '@mui/x-data-grid/locales';
 import type { Site } from '@lunasite/shared-types';
 import { useDashboard } from '@/components/dashboard/DashboardState';
 import { UNAVAILABLE } from '@/lib/format';
+import { ErrorState } from '@/components/results/LoadState';
 
 const STATUS: Record<Site['coordinatesStatus'], string> = {
   published: 'Publiées',
@@ -44,7 +45,7 @@ const columns: GridColDef<Site>[] = [
 export default function SitesPage() {
   const router = useRouter();
   const { sites, siteId, setSiteId } = useDashboard();
-  if (sites.error) return <Alert severity="error">Catalogue indisponible : {sites.error.message}</Alert>;
+  if (sites.error) return <ErrorState title="Catalogue indisponible" error={sites.error} />;
 
   return (
     <Grid container spacing={2}>

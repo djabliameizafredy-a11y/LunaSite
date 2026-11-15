@@ -1,19 +1,21 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-export interface AsyncState<T> { data: T | null; error: Error | null; loading: boolean }
+export interface AsyncState<T> { data: T | null; error: Error | null; loading: boolean; /** chargement de plus de 8 s */ slow: boolean }
 
 /** Charge une ressource asynchrone ; ignore les réponses obsolètes quand les dépendances changent. */
 export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]): AsyncState<T> {
-  const [state, setState] = useState<AsyncState<T>>({ data: null, error: null, loading: true });
+  const [state, setState] = useState<AsyncState<T>>({ data: null, error: null, loading: true, slow: false });
 
   useEffect(() => {
     let alive = true;
-    setState((s) => ({ ...s, loading: true, error: null }));
+    setState((s) => ({ ...s, loading: true, error: null, slow: false }));
+    const slowTimer = setTimeout(() => alive && setState((s) => (s.loading ? { ...s, slow: true } : s)), 8000);
     fn()
-      .then((data) => alive && setState({ data, error: null, loading: false }))
-      .catch((error: Error) => alive && setState({ data: null, error, loading: false }));
-    return () => { alive = false; };
+      .then((data) => alive && setState({ data, error: null, loading: false, slow: false }))
+      .catch((error: Error) => alive && setState({ data: null, error, loading: false, slow: false }))
+      .finally(() => clearTimeout(slowTimer));
+    return () => { alive = false; clearTimeout(slowTimer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 

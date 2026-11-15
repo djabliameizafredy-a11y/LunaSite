@@ -14,6 +14,7 @@ import { fmtDateTimeUTC, fmtDeg, stepFor } from '@/lib/format';
 import { SERIES } from '@/theme/theme';
 import { useDashboard } from '@/components/dashboard/DashboardState';
 import type { LookState } from '@/components/horizon/HorizonScene';
+import { ErrorState, SlowNotice } from '@/components/results/LoadState';
 
 const HorizonScene = dynamic(() => import('@/components/horizon/HorizonScene'), {
   ssr: false,
@@ -143,7 +144,7 @@ export default function HorizonPage() {
     };
   }, [data, i, n]);
 
-  if (res.error) return <Alert severity="error">Calcul impossible : {res.error.message}</Alert>;
+  if (res.error) return <ErrorState title="Calcul impossible" error={res.error} />;
 
   return (
     <Box>
@@ -154,6 +155,7 @@ export default function HorizonPage() {
           : <Chip size="small" color="warning" label="horizon plat (pas de relief)" />)}
       </Stack>
 
+      <SlowNotice slow={res.slow} />
       {data && !skyline && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           Pas de relief LOLA pour ce site : l'horizon est plat. Au pôle Sud, le relief masque souvent le Soleil et la Terre.

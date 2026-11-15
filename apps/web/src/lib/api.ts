@@ -10,17 +10,34 @@ export class ApiRequestError extends Error {
   }
 }
 
+const TIMEOUT_MS = 20_000;
+
+/** Messages pour l'utilisateur : ce qui se passe et quoi faire. Le détail technique part dans la console. */
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    res = await fetch(`${API_URL}/api${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
-  } catch {
-    throw new ApiRequestError(0, 'NETWORK', `API injoignable (${API_URL}). Lancez « npm run api:dev ».`);
+    res = await fetch(`${API_URL}/api${path}`, { ...init, signal: ctrl.signal, headers: { 'Content-Type': 'application/json', ...init?.headers } });
+  } catch (err) {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new ApiRequestError(0, 'OFFLINE', 'Vous êtes hors ligne. Reconnectez-vous puis rechargez la page.');
+    }
+    if (ctrl.signal.aborted) {
+      throw new ApiRequestError(0, 'TIMEOUT', 'Le calcul a pris trop de temps. Réessayez, ou choisissez une période plus courte.');
+    }
+    console.warn(`[LunaSite] API injoignable sur ${API_URL} (en local : npm run api:dev).`, err);
+    throw new ApiRequestError(0, 'NETWORK', 'Connexion au serveur de calcul impossible. Vérifiez votre réseau et réessayez dans un instant.');
+  } finally {
+    clearTimeout(timer);
   }
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     const e = (body as ApiError | null)?.error;
-    throw new ApiRequestError(res.status, e?.code ?? 'INTERNAL', e?.message ?? `Erreur HTTP ${res.status}`, e?.field);
+    const fallback = res.status >= 500
+      ? 'Une erreur est survenue de notre côté. Réessayez dans quelques instants.'
+      : `La demande n'a pas pu être traitée (erreur ${res.status}).`;
+    throw new ApiRequestError(res.status, e?.code ?? 'INTERNAL', e?.message ?? fallback, e?.field);
   }
   return body as T;
 }

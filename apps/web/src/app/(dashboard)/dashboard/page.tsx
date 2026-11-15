@@ -16,6 +16,7 @@ import { SiteInfoCard } from '@/components/results/SiteInfoCard';
 import { SouthPoleMap } from '@/components/results/SouthPoleMap';
 import { ValidationCard } from '@/components/results/ValidationCard';
 import { FadeIn } from '@/components/motion/motion';
+import { ErrorState, SlowNotice } from '@/components/results/LoadState';
 import { useEffect } from 'react';
 
 /** Sous-échantillonne une série pour les mini-courbes (le graphique principal garde tous les points). */
@@ -46,14 +47,17 @@ export default function Overview() {
     el?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   }, [ready]);
 
-  if (sites.error) return <Alert severity="error">Catalogue indisponible : {sites.error.message}</Alert>;
-  if (res.error) return <Alert severity="error">Calcul impossible : {res.error.message}</Alert>;
+  if (sites.error) return <ErrorState title="Catalogue indisponible" error={sites.error} />;
+  if (res.error) return <ErrorState title="Calcul impossible" error={res.error} />;
   if (res.loading || !res.data) {
     return (
-      <Grid container spacing={2}>
+      <>
+      <SlowNotice slow={res.slow} />
+      <Grid container spacing={2} aria-busy="true" aria-label="Chargement des résultats">
         {[0, 1, 2, 3].map((i) => <Grid key={i} size={{ xs: 12, sm: 6, xl: 3 }}><Skeleton variant="rounded" height={160} /></Grid>)}
         {[0, 1].map((i) => <Grid key={i} size={{ xs: 12, lg: 6 }}><Skeleton variant="rounded" height={340} /></Grid>)}
       </Grid>
+      </>
     );
   }
 

@@ -21,6 +21,7 @@ import ColorModeIconDropdown from '@/shared-theme/ColorModeIconDropdown';
 import { CustomIcon } from '@/components/dashboard/AppNavbar';
 import { SERIES } from '@/theme/theme';
 import { SiteFooter } from '@/components/layout/SiteFooter';
+import { CanadaSection, FaqSection, FinalCta, MoonSection, TrustSection } from '@/components/landing/LandingSections';
 import { SearchCommand } from '@/components/dashboard/SearchCommand';
 import { FadeIn, HorizonLine, RiseLine } from '@/components/motion/motion';
 
@@ -142,11 +143,13 @@ export default function Home() {
             </Grid>
           ))}
         </Grid>
-        <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1.5, mt: 5 }}>
-          <Button component={Link} href="/about" variant="outlined">Comment ça marche</Button>
-        </Stack>
-        <Typography variant="caption" component="p" sx={{ color: 'text.secondary', mt: 3 }}>Vidéo : rendu de l'équipe LunaSite.</Typography>
+        <Typography variant="caption" component="p" sx={{ color: 'text.secondary', mt: 3 }}>Vidéo d'accueil : rendu de l'équipe LunaSite.</Typography>
       </Container>
+      <MoonSection />
+      <TrustSection />
+      <CanadaSection />
+      <FaqSection />
+      <FinalCta />
       <Container maxWidth="lg">
         <SiteFooter />
       </Container>

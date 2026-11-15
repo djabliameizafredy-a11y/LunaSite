@@ -84,7 +84,7 @@ export function SiteFooter() {
       <Divider />
       <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ py: 2.5, gap: 1.5, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' } }}>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          © 2026 Équipe LunaSite · Outil pédagogique, pas une recommandation opérationnelle d'atterrissage.
+          © 2026 Équipe LunaSite · Projet étudiant NASA Space Apps, non officiel (ni NASA, ni ASC) · Outil pédagogique, pas une recommandation opérationnelle d'atterrissage · Sans compte ni cookie, aucune donnée personnelle collectée.
         </Typography>
         <Link href="https://github.com/djabliameizafredy-a11y/LunaSite" target="_blank" rel="noopener noreferrer"
           aria-label="Code source sur GitHub (nouvel onglet)" color="text.secondary" sx={{ display: 'inline-flex', '&:hover': { color: 'text.primary' } }}>
