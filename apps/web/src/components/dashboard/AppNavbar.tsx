@@ -12,6 +12,8 @@ import SideMenuMobile from './SideMenuMobile';
 import MenuButton from './MenuButton';
 import ColorModeIconDropdown from '@/shared-theme/ColorModeIconDropdown';
 import { SearchCommand } from './SearchCommand';
+import { useT } from '@/i18n';
+import { LanguageSwitch } from '@/components/layout/LanguageSwitch';
 
 const Toolbar = styled(MuiToolbar)({
   width: '100%',
@@ -27,6 +29,7 @@ const Toolbar = styled(MuiToolbar)({
 
 // Repris de AppNavbar.tsx du template (barre mobile).
 export default function AppNavbar() {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const toggleDrawer = (newOpen: boolean) => () => setOpen(newOpen);
 
@@ -50,8 +53,9 @@ export default function AppNavbar() {
             <Typography variant="h4" component="h1" sx={{ color: 'text.primary' }}>LunaSite</Typography>
           </Stack>
           <SearchCommand compact />
+          <LanguageSwitch />
           <ColorModeIconDropdown />
-          <MenuButton aria-label="menu" onClick={toggleDrawer(true)}>
+          <MenuButton aria-label={t.nav.menu} onClick={toggleDrawer(true)}>
             <MenuRoundedIcon />
           </MenuButton>
           <SideMenuMobile open={open} toggleDrawer={toggleDrawer} />

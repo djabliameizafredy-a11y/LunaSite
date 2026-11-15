@@ -15,6 +15,7 @@ import { SERIES } from '@/theme/theme';
 import { useDashboard } from '@/components/dashboard/DashboardState';
 import type { LookState } from '@/components/horizon/HorizonScene';
 import { ErrorState, SlowNotice } from '@/components/results/LoadState';
+import { useT } from '@/i18n';
 
 const HorizonScene = dynamic(() => import('@/components/horizon/HorizonScene'), {
   ssr: false,
@@ -31,15 +32,12 @@ function horizonAt(skyline: number[] | null, az: number): number {
   return skyline[i] * (1 - f) + skyline[(i + 1) % n] * f;
 }
 
-const SPEEDS = [
-  { v: 1, label: '1 pas / image' },
-  { v: 3, label: '×3' },
-  { v: 8, label: '×8' },
-];
+const SPEEDS = [1, 3, 8];
 
 function BodyCard({ name, icon, color, az, el, horizon, terrain }: {
   name: string; icon: React.ReactNode; color: string; az: number; el: number; horizon: number; terrain: boolean;
 }) {
+  const t = useT();
   const visible = el > horizon;
   return (
     <Card variant="outlined" sx={{ height: '100%' }}>
@@ -47,14 +45,14 @@ function BodyCard({ name, icon, color, az, el, horizon, terrain }: {
         <Stack direction="row" sx={{ alignItems: 'center', gap: 1, mb: 1.5 }}>
           <Box sx={{ color, display: 'flex' }} aria-hidden="true">{icon}</Box>
           <Typography component="h2" variant="subtitle2" sx={{ fontWeight: 600, mr: 'auto' }}>{name}</Typography>
-          <Chip size="small" color={visible ? 'success' : 'default'} label={visible ? 'visible' : terrain ? 'masqué par le relief' : 'sous l’horizon'} />
+          <Chip size="small" color={visible ? 'success' : 'default'} label={visible ? t.horizon.visible : terrain ? t.horizon.hiddenRelief : t.horizon.belowHorizon} />
         </Stack>
         <Box component="dl" sx={{ m: 0, display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 2, rowGap: 0.75,
           '& dt': { color: 'text.secondary', fontSize: '0.8125rem' }, '& dd': { m: 0, fontSize: '0.8125rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums', textAlign: 'right' } }}>
-          <dt>Élévation</dt><dd>{fmtDeg(el)}</dd>
-          <dt>Azimut</dt><dd>{fmtDeg(az)}</dd>
-          <dt>{terrain ? 'Crête LOLA dans cette direction' : 'Horizon (plat)'}</dt><dd>{fmtDeg(horizon)}</dd>
-          <dt>Marge</dt><dd style={{ color: visible ? undefined : 'inherit' }}>{el - horizon >= 0 ? '+' : ''}{fmtDeg(el - horizon)}</dd>
+          <dt>{t.horizon.elevation}</dt><dd>{fmtDeg(el)}</dd>
+          <dt>{t.horizon.azimuth}</dt><dd>{fmtDeg(az)}</dd>
+          <dt>{terrain ? t.horizon.ridgeHere : t.horizon.flatHere}</dt><dd>{fmtDeg(horizon)}</dd>
+          <dt>{t.horizon.margin}</dt><dd style={{ color: visible ? undefined : 'inherit' }}>{el - horizon >= 0 ? '+' : ''}{fmtDeg(el - horizon)}</dd>
         </Box>
       </CardContent>
     </Card>
@@ -64,6 +62,8 @@ function BodyCard({ name, icon, color, az, el, horizon, terrain }: {
 /** Vue horizon 3D : le ciel du site (Soleil, Terre) au-dessus de la vraie ligne de crête LOLA, sur la période choisie. */
 export default function HorizonPage() {
   const { siteId, date, days, selectedSite } = useDashboard();
+  const t = useT();
+  const h = t.horizon;
   const params = { date, days, stepMinutes: stepFor(days) };
   const res = useAsync(
     () => Promise.all([api.solar(siteId, params), api.earth(siteId, params), api.horizon(siteId)]),
@@ -144,21 +144,21 @@ export default function HorizonPage() {
     };
   }, [data, i, n]);
 
-  if (res.error) return <ErrorState title="Calcul impossible" error={res.error} />;
+  if (res.error) return <ErrorState title={t.overview.calcFailed} error={res.error} />;
 
   return (
     <Box>
       <Stack direction="row" sx={{ alignItems: 'baseline', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-        <Typography component="h2" variant="h6">Horizon 3D{selectedSite ? ` — ${selectedSite.name}` : ''}</Typography>
+        <Typography component="h2" variant="h6">{h.title(selectedSite?.name)}</Typography>
         {data && (skyline
-          ? <Chip size="small" color="success" label="crête LOLA réelle" />
-          : <Chip size="small" color="warning" label="horizon plat (pas de relief)" />)}
+          ? <Chip size="small" color="success" label={h.realRidge} />
+          : <Chip size="small" color="warning" label={h.flatChip} />)}
       </Stack>
 
       <SlowNotice slow={res.slow} />
       {data && !skyline && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Pas de relief LOLA pour ce site : l'horizon est plat. Au pôle Sud, le relief masque souvent le Soleil et la Terre.
+          {h.flatWarning}
         </Alert>
       )}
 
@@ -167,73 +167,70 @@ export default function HorizonPage() {
           ref={viewport}
           tabIndex={0}
           role="application"
-          aria-label="Vue horizon 3D. Glisser ou flèches du clavier pour regarder autour, molette pour zoomer."
+          aria-label={h.viewAria}
           onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
           onKeyDown={onKeyDown}
           sx={{ position: 'relative', height: { xs: 360, md: '58vh' }, minHeight: 320, bgcolor: '#000', cursor: 'grab', touchAction: 'none',
             '&:active': { cursor: 'grabbing' }, '&:focus-visible': { outline: '2px solid #fbbf24', outlineOffset: -2 } }}
         >
           {frame
-            ? <HorizonScene sun={frame.sun} earth={frame.earth} skyline={skyline} exaggeration={exaggeration} look={look} showGrid={showGrid} />
+            ? <HorizonScene sun={frame.sun} earth={frame.earth} skyline={skyline} exaggeration={exaggeration} look={look} showGrid={showGrid} cardinals={h.cardinals} />
             : <Skeleton variant="rectangular" sx={{ width: '100%', height: '100%', bgcolor: '#0b0b0b' }} />}
           {frame && (
             <Box sx={{ position: 'absolute', left: 12, top: 12, px: 1.25, py: 0.75, borderRadius: 1, bgcolor: 'rgba(0,0,0,0.6)', color: '#fff', pointerEvents: 'none' }}>
               <Typography variant="body2" sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtDateTimeUTC(frame.t)}</Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>Soleil et Terre agrandis ×{exaggeration} pour être visibles</Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>{h.enlarged(exaggeration)}</Typography>
             </Box>
           )}
         </Box>
 
         <Stack direction={{ xs: 'column', md: 'row' }} sx={{ gap: { xs: 1.5, md: 2.5 }, alignItems: { md: 'center' }, px: 2, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
-            <Tooltip title={playing ? 'Pause' : 'Lecture'}>
+            <Tooltip title={playing ? h.pause : h.play}>
               <span>
-                <IconButton onClick={() => { if (i >= n - 1) setI(0); setPlaying((p) => !p); }} disabled={!frame} aria-label={playing ? 'Pause' : 'Lecture'}>
+                <IconButton onClick={() => { if (i >= n - 1) setI(0); setPlaying((p) => !p); }} disabled={!frame} aria-label={playing ? h.pause : h.play}>
                   {playing ? <PauseRoundedIcon /> : <PlayArrowRoundedIcon />}
                 </IconButton>
               </span>
             </Tooltip>
             <Slider size="small" min={0} max={Math.max(n - 1, 0)} value={Math.min(i, Math.max(n - 1, 0))} disabled={!frame}
               onChange={(_e, v) => { setPlaying(false); setI(v as number); }}
-              aria-label="Instant de la période" getAriaValueText={() => (frame ? fmtDateTimeUTC(frame.t) : '')}
+              aria-label={h.instant} getAriaValueText={() => (frame ? fmtDateTimeUTC(frame.t) : '')}
               valueLabelDisplay="off" sx={{ flex: 1 }} />
-            <Select size="small" value={speed} onChange={(e) => setSpeed(Number(e.target.value))} inputProps={{ 'aria-label': 'Vitesse de lecture' }}>
-              {SPEEDS.map((s) => <MenuItem key={s.v} value={s.v}>{s.label}</MenuItem>)}
+            <Select size="small" value={speed} onChange={(e) => setSpeed(Number(e.target.value))} inputProps={{ 'aria-label': h.speed }}>
+              {SPEEDS.map((v, k) => <MenuItem key={v} value={v}>{h.speeds[k]}</MenuItem>)}
             </Select>
           </Stack>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Button size="small" variant="outlined" startIcon={<WbSunnyRoundedIcon sx={{ color: SERIES.sun }} />} disabled={!frame}
-              onClick={() => frame && aim(frame.sun.az, frame.sun.el)}>Viser le Soleil</Button>
+              onClick={() => frame && aim(frame.sun.az, frame.sun.el)}>{h.aimSun}</Button>
             <Button size="small" variant="outlined" startIcon={<PublicRoundedIcon sx={{ color: SERIES.earth }} />} disabled={!frame}
-              onClick={() => frame && aim(frame.earth.az, frame.earth.el)}>Viser la Terre</Button>
+              onClick={() => frame && aim(frame.earth.az, frame.earth.el)}>{h.aimEarth}</Button>
             <Stack direction="row" sx={{ alignItems: 'center', gap: 1, width: 150 }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>Taille ×{exaggeration}</Typography>
-              <Slider size="small" min={1} max={12} value={exaggeration} onChange={(_e, v) => setExaggeration(v as number)} aria-label="Agrandissement du Soleil et de la Terre" />
+              <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>{h.size(exaggeration)}</Typography>
+              <Slider size="small" min={1} max={12} value={exaggeration} onChange={(_e, v) => setExaggeration(v as number)} aria-label={h.sizeAria} />
             </Stack>
             <FormControlLabel control={<Switch size="small" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />}
-              label={<Typography variant="caption">Grille</Typography>} sx={{ ml: 0.5 }} />
+              label={<Typography variant="caption">{h.grid}</Typography>} sx={{ ml: 0.5 }} />
           </Stack>
         </Stack>
       </Card>
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-          {frame ? <BodyCard name="Soleil" icon={<WbSunnyRoundedIcon />} color={SERIES.sun} az={frame.sun.az} el={frame.sun.el}
+          {frame ? <BodyCard name={t.common.sun} icon={<WbSunnyRoundedIcon />} color={SERIES.sun} az={frame.sun.az} el={frame.sun.el}
             horizon={horizonAt(skyline, frame.sun.az)} terrain={Boolean(skyline)} /> : <Skeleton variant="rounded" height={170} />}
         </Grid>
         <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-          {frame ? <BodyCard name="Terre" icon={<PublicRoundedIcon />} color={SERIES.earth} az={frame.earth.az} el={frame.earth.el}
+          {frame ? <BodyCard name={t.common.earth} icon={<PublicRoundedIcon />} color={SERIES.earth} az={frame.earth.az} el={frame.earth.el}
             horizon={horizonAt(skyline, frame.earth.az)} terrain={Boolean(skyline)} /> : <Skeleton variant="rounded" height={170} />}
         </Grid>
         <Grid size={{ xs: 12, xl: 4 }}>
           <Card variant="outlined" sx={{ height: '100%' }}>
             <CardContent>
-              <Typography component="h2" variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Comment lire cette vue</Typography>
+              <Typography component="h2" variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>{h.howTitle}</Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
-                Vous êtes debout sur le site, les yeux à 1,7 m. La crête grise est l'horizon réel mesuré par LOLA
-                {data?.[2].maxRangeKm ? ` jusqu'à ${data[2].maxRangeKm} km` : ''} : quand le Soleil ou la Terre passe derrière,
-                il est masqué. Les positions viennent du même calcul que la vue d'ensemble. Le sol proche et la texture de la Terre
-                sont illustratifs.
+                {h.how(data?.[2].maxRangeKm ? h.upTo(data[2].maxRangeKm) : '')}
               </Typography>
             </CardContent>
           </Card>

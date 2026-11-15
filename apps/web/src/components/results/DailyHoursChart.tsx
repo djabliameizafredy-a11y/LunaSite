@@ -4,6 +4,7 @@ import { Card, CardContent, Typography } from '@mui/material';
 import { BarChart } from '@mui/x-charts/BarChart';
 import type { Window } from '@lunasite/shared-types';
 import { fmtDayShort } from '@/lib/format';
+import { useT } from '@/i18n';
 
 /** Heures de fenêtre par jour UTC : simple agrégation des fenêtres renvoyées par l'API (aucun calcul physique ici). */
 function hoursPerDay(windows: Window[], start: string, end: string) {
@@ -20,6 +21,7 @@ function hoursPerDay(windows: Window[], start: string, end: string) {
 export function DailyHoursChart({ sun, earth, period, sunColor, earthColor }: {
   sun: Window[]; earth: Window[]; period: { start: string; end: string }; sunColor: string; earthColor: string;
 }) {
+  const t = useT();
   const data = useMemo(() => {
     const s = hoursPerDay(sun, period.start, period.end);
     const e = hoursPerDay(earth, period.start, period.end);
@@ -30,16 +32,16 @@ export function DailyHoursChart({ sun, earth, period, sunColor, earthColor }: {
   return (
     <Card sx={{ height: '100%' }}>
       <CardContent>
-        <Typography component="h2" variant="subtitle1" sx={{ fontWeight: 700 }}>Heures par jour</Typography>
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>Soleil au-dessus de l'horizon et Terre visible, par jour UTC (sur 24 h)</Typography>
+        <Typography component="h2" variant="subtitle1" sx={{ fontWeight: 700 }}>{t.daily.title}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t.daily.subtitle}</Typography>
         <BarChart
           height={260}
           grid={{ horizontal: true }}
           xAxis={[{ data: data.labels, scaleType: 'band' }]}
-          yAxis={[{ min: 0, max: 24, label: 'heures' }]}
+          yAxis={[{ min: 0, max: 24, label: t.daily.hours }]}
           series={[
-            { data: data.s, label: 'Soleil', color: sunColor, valueFormatter: (v) => `${v} h` },
-            { data: data.e, label: 'Terre', color: earthColor, valueFormatter: (v) => `${v} h` },
+            { data: data.s, label: t.common.sun, color: sunColor, valueFormatter: (v) => `${v} h` },
+            { data: data.e, label: t.common.earth, color: earthColor, valueFormatter: (v) => `${v} h` },
           ]}
           margin={{ left: 8, right: 8, top: 16, bottom: 8 }}
         />

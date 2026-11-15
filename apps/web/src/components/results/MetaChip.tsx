@@ -1,25 +1,23 @@
 'use client';
 import { Box, Chip, Tooltip, Typography } from '@mui/material';
 import type { ResultMeta } from '@lunasite/shared-types';
+import { useT } from '@/i18n';
 
-const LEVEL = {
-  mock: { label: 'Données de démo', color: 'error' },
-  simplified: { label: 'Calcul simplifié', color: 'warning' },
-  'terrain-aware': { label: 'Avec relief LOLA', color: 'success' },
-} as const;
+const LEVEL_COLOR = { mock: 'error', simplified: 'warning', 'terrain-aware': 'success' } as const;
 
 /** Niveau de calcul toujours visible à côté d'un résultat, avec sources et hypothèses au survol. */
 export function MetaChip({ meta }: { meta: ResultMeta }) {
-  const l = LEVEL[meta.calculationLevel];
+  const t = useT();
+  const l = { label: t.meta.level[meta.calculationLevel], color: LEVEL_COLOR[meta.calculationLevel] };
   return (
     <Tooltip
       arrow
       title={
         <Box sx={{ p: 0.5, maxWidth: 360 }}>
           <Typography variant="caption" component="div" sx={{ fontWeight: 700 }}>
-            Méthode {meta.methodVersion} · pas de {meta.stepMinutes} min
+            {t.meta.method(meta.methodVersion, meta.stepMinutes)}
           </Typography>
-          <Typography variant="caption" component="div" sx={{ mt: 0.5 }}>Sources : {meta.sources.join(' ; ')}</Typography>
+          <Typography variant="caption" component="div" sx={{ mt: 0.5 }}>{t.meta.sources(meta.sources.join(' ; '))}</Typography>
           {meta.assumptions.slice(0, 4).map((a) => (
             <Typography key={a} variant="caption" component="div" sx={{ mt: 0.5 }}>• {a}</Typography>
           ))}

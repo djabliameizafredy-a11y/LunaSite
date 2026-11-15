@@ -10,6 +10,7 @@ import PlaceRoundedIcon from '@mui/icons-material/PlaceRounded';
 import HistoryEduRoundedIcon from '@mui/icons-material/HistoryEduRounded';
 import type { Site } from '@lunasite/shared-types';
 import { useDashboard } from './DashboardState';
+import { useT } from '@/i18n';
 
 // Repris de SelectContent.tsx du template (Avatar, ListItemAvatar, styles du Select), alimenté par le catalogue.
 const Avatar = styled(MuiAvatar)(({ theme }) => ({
@@ -22,12 +23,9 @@ const Avatar = styled(MuiAvatar)(({ theme }) => ({
 
 const ListItemAvatar = styled(MuiListItemAvatar)({ minWidth: 0, marginRight: 12 });
 
-const REGION_LABEL: Record<string, string> = {
-  'south-pole': 'Pôle Sud', 'south-highlands': 'Hauts plateaux Sud', equatorial: 'Équatoriale', 'near-side': 'Face visible',
-};
-
 export function SiteSelect() {
   const { sites, siteId, setSiteId } = useDashboard();
+  const t = useT();
   const list = sites.data ?? [];
   const groups = list.reduce<Record<string, Site[]>>((acc, s) => ((acc[s.region] ??= []).push(s), acc), {});
 
@@ -53,9 +51,9 @@ export function SiteSelect() {
       value={list.some((s) => s.id === siteId) ? siteId : ''}
       onChange={(e) => setSiteId(String(e.target.value))}
       displayEmpty
-      inputProps={{ 'aria-label': 'Choisir un site' }}
+      inputProps={{ 'aria-label': t.site.choose }}
       fullWidth
-      renderValue={(id) => { const s = list.find((x) => x.id === id); return s ? row(s) : 'Chargement des sites…'; }}
+      renderValue={(id) => { const s = list.find((x) => x.id === id); return s ? row(s) : t.common.loadingSites; }}
       sx={{
         maxHeight: 56,
         width: 215,
@@ -65,7 +63,7 @@ export function SiteSelect() {
       MenuProps={{ slotProps: { paper: { sx: { maxHeight: 440 } } } }}
     >
       {Object.entries(groups).flatMap(([region, items], i) => [
-        <ListSubheader key={`h-${region}`} sx={i === 0 ? { pt: 0 } : undefined}>{REGION_LABEL[region] ?? region}</ListSubheader>,
+        <ListSubheader key={`h-${region}`} sx={i === 0 ? { pt: 0 } : undefined}>{t.site.regions[region] ?? region}</ListSubheader>,
         ...items.map((s) => <MenuItem key={s.id} value={s.id}>{row(s)}</MenuItem>),
       ])}
     </Select>

@@ -5,40 +5,38 @@ import { useAsync } from '@/lib/useAsync';
 import { fmtDateUTC, stepFor, todayUTC } from '@/lib/format';
 import { fmtAngleDiff } from '@/components/results/ValidationCard';
 import { useDashboard } from '@/components/dashboard/DashboardState';
+import { useT } from '@/i18n';
 
-const SOURCES = [
-  { name: 'NASA PDS — LOLA (LRO), DEM polaire Sud 80 m', role: 'Relief, pentes et profils d’horizon', url: 'https://pds-geosciences.wustl.edu/missions/lro/lola.htm' },
-  { name: 'NASA Moon Trek (WMTS)', role: 'Fonds de carte lunaires', url: 'https://trek.nasa.gov/moon/' },
-  { name: 'JPL Horizons', role: 'Référence de validation des positions Soleil / Terre', url: 'https://ssd.jpl.nasa.gov/horizons/' },
-  { name: 'LROC QuickMap', role: 'Image du pôle Sud (export géoréférencé) et exploration visuelle complémentaire', url: 'https://quickmap.lroc.im-ldi.com/' },
-  { name: 'Agence spatiale canadienne — exploration lunaire', role: 'Contexte : programmes et missions lunaires', url: 'https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/' },
+const SOURCE_URLS = [
+  'https://pds-geosciences.wustl.edu/missions/lro/lola.htm',
+  'https://trek.nasa.gov/moon/',
+  'https://ssd.jpl.nasa.gov/horizons/',
+  'https://quickmap.lroc.im-ldi.com/',
+  'https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/',
 ];
 
 /** Tableau de validation : écarts entre notre moteur et JPL Horizons, site par site. */
 function ValidationTable() {
+  const t = useT();
+  const l = t.limits;
   const v = useAsync(() => api.validation(), []);
   return (
     <Card>
       <CardContent>
-        <Typography component="h2" variant="h6" gutterBottom>Validation contre JPL Horizons (NASA)</Typography>
+        <Typography component="h2" variant="h6" gutterBottom>{l.validationTitle}</Typography>
         {v.error && <Alert severity="error">{v.error.message}</Alert>}
-        {v.data && !v.data.available && <Alert severity="info">{v.data.reason}</Alert>}
+        {v.data && !v.data.available && <Alert severity="info">{v.data.reason ?? t.validation.notImported}</Alert>}
         {v.data?.available && (
           <>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
-              Sur {v.data.summary.sites} sites, écart maximal : élévation ±{fmtAngleDiff(v.data.summary.maxAbsElevationDiffDeg)},
-              azimut ±{fmtAngleDiff(v.data.summary.maxAbsAzimuthDiffDeg)}. Source : {v.data.source?.source}, {v.data.source?.ephemeris},
-              importé le {v.data.source ? fmtDateUTC(v.data.source.fetchedAt) : ''} ({v.data.referenceSource === 'database' ? 'depuis PostgreSQL' : 'fichier embarqué'}).
+              {l.validationSummary(v.data.summary.sites, fmtAngleDiff(v.data.summary.maxAbsElevationDiffDeg), fmtAngleDiff(v.data.summary.maxAbsAzimuthDiffDeg))}{' '}
+              {l.validationSource(v.data.source?.source ?? '', v.data.source?.ephemeris ?? '', v.data.source ? fmtDateUTC(v.data.source.fetchedAt) : '',
+                v.data.referenceSource === 'database' ? l.fromDbShort : l.fromFile)}
             </Typography>
-            <Table size="small" aria-label="Écarts LunaSite / JPL Horizons par site">
+            <Table size="small" aria-label={l.tableAria}>
               <TableHead>
                 <TableRow>
-                  <TableCell>Site</TableCell>
-                  <TableCell align="right">Soleil : élévation</TableCell>
-                  <TableCell align="right">Soleil : azimut</TableCell>
-                  <TableCell align="right">Terre : élévation</TableCell>
-                  <TableCell align="right">Terre : azimut</TableCell>
-                  <TableCell align="right">Instants</TableCell>
+                  {l.cols.map((c, i) => <TableCell key={c} align={i === 0 ? 'left' : 'right'}>{c}</TableCell>)}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -66,6 +64,8 @@ function ValidationTable() {
 
 /** Données et limites : d'où viennent les chiffres et ce qu'ils ne disent pas. */
 export default function LimitsPage() {
+  const t = useT();
+  const l = t.limits;
   const { siteId } = useDashboard();
   const health = useAsync(() => api.health(), []);
   const solar = useAsync(() => api.solar(siteId, { date: todayUTC(), days: 1, stepMinutes: stepFor(1) }), [siteId]);
@@ -74,18 +74,18 @@ export default function LimitsPage() {
     <Stack sx={{ gap: 2 }}>
       {health.data && (
         <Alert severity={health.data.catalogueSource === 'database' ? 'success' : 'warning'}>
-          Catalogue servi depuis : <b>{health.data.catalogueSource === 'database' ? 'PostgreSQL (Supabase)' : 'catalogue embarqué'}</b>
+          {l.servedFrom} <b>{health.data.catalogueSource === 'database' ? t.sidebar.fromDb : t.sidebar.embedded}</b>
           {health.data.catalogueFallbackReason && ` — ${health.data.catalogueFallbackReason}`}
         </Alert>
       )}
       <ValidationTable />
       <Card>
         <CardContent>
-          <Typography component="h2" variant="h6" gutterBottom>Sources de données</Typography>
+          <Typography component="h2" variant="h6" gutterBottom>{l.sourcesTitle}</Typography>
           <List dense>
-            {SOURCES.map((s) => (
-              <ListItem key={s.name} disableGutters>
-                <ListItemText primary={<Link href={s.url} target="_blank" rel="noopener noreferrer">{s.name}</Link>} secondary={s.role} />
+            {l.sources.map(([name, role], i) => (
+              <ListItem key={name} disableGutters>
+                <ListItemText primary={<Link href={SOURCE_URLS[i]} target="_blank" rel="noopener noreferrer">{name}</Link>} secondary={role} />
               </ListItem>
             ))}
           </List>
@@ -93,29 +93,26 @@ export default function LimitsPage() {
       </Card>
       <Card>
         <CardContent>
-          <Typography component="h2" variant="h6" gutterBottom>Hypothèses de calcul (renvoyées par l'API)</Typography>
+          <Typography component="h2" variant="h6" gutterBottom>{l.assumptionsTitle}</Typography>
           {solar.error && <Alert severity="error">{solar.error.message}</Alert>}
           {solar.data && (
             <>
               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                Méthode {solar.data.meta.methodVersion} · sources : {solar.data.meta.sources.join(' ; ')}
+                {l.method(solar.data.meta.methodVersion, solar.data.meta.sources.join(' ; '))}
               </Typography>
-              <List dense>
+              <List dense lang="fr">
                 {solar.data.meta.assumptions.map((a) => <ListItem key={a} disableGutters><ListItemText primary={a} /></ListItem>)}
               </List>
+              {t.locale !== 'fr-FR' && <Typography variant="caption" sx={{ color: 'text.secondary' }}>{l.apiLanguageNote}</Typography>}
             </>
           )}
         </CardContent>
       </Card>
       <Card>
         <CardContent>
-          <Typography component="h2" variant="h6" gutterBottom>Ce que LunaSite ne dit pas</Typography>
+          <Typography component="h2" variant="h6" gutterBottom>{l.notTitle}</Typography>
           <List dense>
-            <ListItem disableGutters><ListItemText primary="Terre visible ≠ liaison radio garantie (antennes, stations au sol, bilan de liaison non modélisés)." /></ListItem>
-            <ListItem disableGutters><ListItemText primary="Potentiel d’énergie indicatif ≠ production réelle (pas de pertes, de poussière, de stockage ni de thermique)." /></ListItem>
-            <ListItem disableGutters><ListItemText primary="Sans relief chargé, l’horizon est plat : au pôle Sud, ensoleillement et fenêtres peuvent être surestimés." /></ListItem>
-            <ListItem disableGutters><ListItemText primary="Le score de faisabilité repose sur une pondération choisie par l’équipe, pas sur un standard NASA." /></ListItem>
-            <ListItem disableGutters><ListItemText primary="Outil pédagogique : aucune recommandation opérationnelle d’atterrissage." /></ListItem>
+            {l.not.map((n) => <ListItem key={n} disableGutters><ListItemText primary={n} /></ListItem>)}
           </List>
         </CardContent>
       </Card>

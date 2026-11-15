@@ -11,6 +11,7 @@ import { SiteSelect } from './SiteSelect';
 import MenuContent from './MenuContent';
 import CardAlert from './CardAlert';
 import DataSourceStatus from './DataSourceStatus';
+import { useT } from '@/i18n';
 
 const drawerWidth = 240;
 
@@ -24,12 +25,13 @@ const Drawer = styled(MuiDrawer)({
 
 // Repris de SideMenu.tsx du template.
 export default function SideMenu() {
+  const t = useT();
   return (
     <Drawer
       variant="permanent"
       sx={{ display: { xs: 'none', md: 'block' }, [`& .${drawerClasses.paper}`]: { backgroundColor: 'background.paper' } }}
     >
-      <Stack component={NextLink} href="/" direction="row" aria-label="LunaSite, accueil"
+      <Stack component={NextLink} href="/" direction="row" aria-label={t.nav.homeLink}
         sx={{ alignItems: 'center', gap: 1.25, px: 2, pt: 'calc(var(--template-frame-height, 0px) + 16px)', pb: 0.5, color: 'text.primary', textDecoration: 'none' }}>
         <CustomIcon size="1.9rem" />
         <Typography component="span" sx={{ fontWeight: 700, fontSize: '1.125rem', letterSpacing: '-0.01em' }}>LunaSite</Typography>

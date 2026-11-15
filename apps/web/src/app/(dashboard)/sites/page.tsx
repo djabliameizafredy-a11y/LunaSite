@@ -3,50 +3,44 @@ import { useRouter } from 'next/navigation';
 import { Alert, Card, Grid, Typography } from '@mui/material';
 import { SouthPoleMap } from '@/components/results/SouthPoleMap';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
-import { frFR } from '@mui/x-data-grid/locales';
+import { enUS, frFR } from '@mui/x-data-grid/locales';
 import type { Site } from '@lunasite/shared-types';
 import { useDashboard } from '@/components/dashboard/DashboardState';
 import { UNAVAILABLE } from '@/lib/format';
 import { ErrorState } from '@/components/results/LoadState';
 import { GlobeCard } from '@/components/globe/GlobeCard';
+import { useI18n, type Dict } from '@/i18n';
+import { useMemo } from 'react';
 
-const STATUS: Record<Site['coordinatesStatus'], string> = {
-  published: 'Publiées',
-  derived_from_dem: 'Dérivées du DEM LOLA',
-  approximate_to_verify: 'À vérifier',
-};
-
-const REGION: Record<string, string> = {
-  'south-pole': 'Pôle Sud', 'south-highlands': 'Hauts plateaux Sud', equatorial: 'Équatoriale', 'near-side': 'Face visible',
-};
-
-const columns: GridColDef<Site>[] = [
-  { field: 'name', headerName: 'Site', flex: 2, minWidth: 220 },
-  { field: 'region', headerName: 'Région', flex: 1, minWidth: 130, valueFormatter: (v: string) => REGION[v] ?? v },
-  { field: 'latitude', headerName: 'Latitude (°)', type: 'number', flex: 1, minWidth: 110 },
-  { field: 'longitude', headerName: 'Longitude (°E)', type: 'number', flex: 1, minWidth: 120 },
+const makeColumns = (t: Dict): GridColDef<Site>[] => [
+  { field: 'name', headerName: t.sites.cols.name, flex: 2, minWidth: 220 },
+  { field: 'region', headerName: t.sites.cols.region, flex: 1, minWidth: 130, valueFormatter: (v: string) => t.site.regions[v] ?? v },
+  { field: 'latitude', headerName: t.sites.cols.lat, type: 'number', flex: 1, minWidth: 110 },
+  { field: 'longitude', headerName: t.sites.cols.lon, type: 'number', flex: 1, minWidth: 120 },
   {
-    field: 'slope', headerName: 'Pente (°)', type: 'number', flex: 1, minWidth: 100,
+    field: 'slope', headerName: t.sites.cols.slope, type: 'number', flex: 1, minWidth: 100,
     valueGetter: (_v, row) => row.terrain.slopeDeg,
-    valueFormatter: (v: number | null) => (v == null ? UNAVAILABLE : v),
+    valueFormatter: (v: number | null) => (v == null ? t.common.unavailable : v),
   },
   {
-    field: 'relief', headerName: 'Relief local (m)', type: 'number', flex: 1, minWidth: 130,
+    field: 'relief', headerName: t.sites.cols.relief, type: 'number', flex: 1, minWidth: 130,
     valueGetter: (_v, row) => row.terrain.localReliefM,
-    valueFormatter: (v: number | null) => (v == null ? UNAVAILABLE : v),
+    valueFormatter: (v: number | null) => (v == null ? t.common.unavailable : v),
   },
   {
-    field: 'horizon', headerName: 'Horizon', flex: 1, minWidth: 120,
-    valueGetter: (_v, row) => (row.terrain.horizonMask ? 'Relief LOLA' : 'Plat'),
+    field: 'horizon', headerName: t.sites.cols.horizon, flex: 1, minWidth: 120,
+    valueGetter: (_v, row) => (row.terrain.horizonMask ? t.sites.horizonLola : t.sites.horizonFlat),
   },
-  { field: 'coordinatesStatus', headerName: 'Coordonnées', flex: 1, minWidth: 150, valueFormatter: (v: Site['coordinatesStatus']) => STATUS[v] },
+  { field: 'coordinatesStatus', headerName: t.sites.cols.coords, flex: 1, minWidth: 150, valueFormatter: (v: Site['coordinatesStatus']) => t.sites.status[v] },
 ];
 
 /** Catalogue (table « Details » du template) : clic sur une ligne = ouvrir le site dans la vue d'ensemble. */
 export default function SitesPage() {
   const router = useRouter();
   const { sites, siteId, setSiteId } = useDashboard();
-  if (sites.error) return <ErrorState title="Catalogue indisponible" error={sites.error} />;
+  const { t, locale } = useI18n();
+  const columns = useMemo(() => makeColumns(t), [t]);
+  if (sites.error) return <ErrorState title={t.overview.catalogueDown} error={sites.error} />;
 
   return (
     <Grid container spacing={2}>
@@ -61,14 +55,14 @@ export default function SitesPage() {
             columns={columns}
             loading={sites.loading}
             density="compact"
-            localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+            localeText={(locale === 'fr' ? frFR : enUS).components.MuiDataGrid.defaultProps.localeText}
             disableRowSelectionOnClick
             onRowClick={(p) => { setSiteId(String(p.id)); router.push('/dashboard'); }}
             initialState={{ sorting: { sortModel: [{ field: 'latitude', sort: 'asc' }] } }}
             sx={{ border: 0, '& .MuiDataGrid-row': { cursor: 'pointer' } }}
           />
           <Typography variant="caption" sx={{ display: 'block', p: 1.5, color: 'text.secondary' }}>
-            Coordonnées sélénographiques (Sud négatif, longitude Est positive). « indisponible » = valeur inconnue, jamais 0.
+            {t.sites.note}
           </Typography>
         </Card>
       </Grid>

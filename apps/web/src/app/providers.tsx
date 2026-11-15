@@ -6,6 +6,9 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/fr';
+import 'dayjs/locale/en';
+import { Fragment } from 'react';
+import { DocumentTitle, I18nProvider } from '@/i18n';
 import AppTheme from '@/shared-theme/AppTheme';
 import { chartsCustomizations, dataGridCustomizations, datePickersCustomizations } from '@/theme/customizations';
 import { DashboardStateProvider } from '@/components/dashboard/DashboardState';
@@ -17,9 +20,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <AppTheme themeComponents={xThemeComponents}>
       <CssBaseline enableColorScheme />
-      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="fr">
-        <DashboardStateProvider>{children}</DashboardStateProvider>
-      </LocalizationProvider>
+      <I18nProvider>
+        {(locale) => (
+          <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={locale}>
+            <DashboardStateProvider>
+              {/* Clé de langue : remonte les pages pour que formats et graphiques suivent ; le site choisi est conservé. */}
+              <DocumentTitle />
+              <Fragment key={locale}>{children}</Fragment>
+            </DashboardStateProvider>
+          </LocalizationProvider>
+        )}
+      </I18nProvider>
     </AppTheme>
   );
 }

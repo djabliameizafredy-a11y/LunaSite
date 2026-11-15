@@ -6,12 +6,14 @@ import {
 import type { ResultMeta, Window } from '@lunasite/shared-types';
 import { fmtDateTimeUTC, fmtDayShort, fmtDeg, fmtHours, fmtPeriod } from '@/lib/format';
 import { MetaChip } from './MetaChip';
+import { useT } from '@/i18n';
 
 interface Row { label: string; color: string; windows: Window[] }
 
 /** Frise des fenêtres : Soleil visible et Terre visible (communication directe). Visualisation 4 du défi. */
 export function WindowsTimeline({ rows, period, meta }: { rows: Row[]; period: { start: string; end: string }; meta: ResultMeta }) {
   const [showTable, setShowTable] = useState(false);
+  const t = useT();
   const t0 = Date.parse(period.start);
   const span = Date.parse(period.end) - t0;
   const pct = (iso: string) => Math.min(100, Math.max(0, ((Date.parse(iso) - t0) / span) * 100));
@@ -23,7 +25,7 @@ export function WindowsTimeline({ rows, period, meta }: { rows: Row[]; period: {
       <CardContent>
         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 1, flexWrap: 'wrap', mb: 2 }}>
           <div>
-            <Typography component="h2" variant="subtitle1" sx={{ fontWeight: 700 }}>Fenêtres de visibilité et de communication directe</Typography>
+            <Typography component="h2" variant="subtitle1" sx={{ fontWeight: 700 }}>{t.timeline.title}</Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>{fmtPeriod(period)}</Typography>
           </div>
           <MetaChip meta={meta} />
@@ -37,7 +39,7 @@ export function WindowsTimeline({ rows, period, meta }: { rows: Row[]; period: {
                 <Tooltip
                   key={w.start}
                   arrow
-                  title={`${fmtDateTimeUTC(w.start)}${w.truncatedStart ? ' (commence avant la période)' : ''} → ${fmtDateTimeUTC(w.end)}${w.truncatedEnd ? ' (continue après la période)' : ''} · ${fmtHours(w.durationHours)} · max ${fmtDeg(w.maxElevationDeg)}`}
+                  title={`${fmtDateTimeUTC(w.start)}${w.truncatedStart ? t.timeline.startsBefore : ''} → ${fmtDateTimeUTC(w.end)}${w.truncatedEnd ? t.timeline.endsAfter : ''} · ${fmtHours(w.durationHours)} · max ${fmtDeg(w.maxElevationDeg)}`}
                 >
                   <Box
                     sx={{
@@ -61,21 +63,20 @@ export function WindowsTimeline({ rows, period, meta }: { rows: Row[]; period: {
         </Box>
 
         <Typography variant="caption" component="p" sx={{ color: 'text.secondary', mt: 1 }}>
-          Visibilité <b>géométrique</b> de la Terre : elle ne garantit pas une liaison radio (antenne, station au sol et bilan de liaison non modélisés).
-          Bord en pointillés : fenêtre tronquée par la période.
+          {t.timeline.note}
         </Typography>
         <Button size="small" onClick={() => setShowTable((v) => !v)} sx={{ mt: 1 }}>
-          {showTable ? 'Masquer le tableau' : 'Voir en tableau'}
+          {showTable ? t.timeline.hideTable : t.timeline.showTable}
         </Button>
         <Collapse in={showTable} unmountOnExit>
           {rows.map((r) => (
             <Box key={r.label} sx={{ mt: 2 }}>
-              <Typography variant="subtitle2">{r.label} — {r.windows.length} fenêtre(s)</Typography>
+              <Typography variant="subtitle2">{t.timeline.windowsCount(r.label, r.windows.length)}</Typography>
               {r.windows.length === 0 ? (
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>Aucune fenêtre sur la période (ce n'est pas une erreur).</Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>{t.timeline.none}</Typography>
               ) : (
                 <Table size="small">
-                  <TableHead><TableRow><TableCell>Début (UTC)</TableCell><TableCell>Fin (UTC)</TableCell><TableCell align="right">Durée</TableCell><TableCell align="right">Élévation max</TableCell></TableRow></TableHead>
+                  <TableHead><TableRow><TableCell>{t.timeline.start}</TableCell><TableCell>{t.timeline.end}</TableCell><TableCell align="right">{t.timeline.duration}</TableCell><TableCell align="right">{t.timeline.maxEl}</TableCell></TableRow></TableHead>
                   <TableBody>
                     {r.windows.map((w) => (
                       <TableRow key={w.start}>
@@ -90,7 +91,7 @@ export function WindowsTimeline({ rows, period, meta }: { rows: Row[]; period: {
               )}
             </Box>
           ))}
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>* limite tronquée par la période demandée.</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t.timeline.truncated}</Typography>
         </Collapse>
       </CardContent>
     </Card>

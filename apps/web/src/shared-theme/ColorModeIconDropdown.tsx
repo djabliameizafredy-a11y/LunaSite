@@ -7,8 +7,10 @@ import IconButton, { IconButtonOwnProps } from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { useColorScheme } from '@mui/material/styles';
+import { useT } from '@/i18n';
 
 export default function ColorModeIconDropdown(props: IconButtonOwnProps) {
+  const t = useT();
   const { mode, systemMode, setMode } = useColorScheme();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -52,6 +54,7 @@ export default function ColorModeIconDropdown(props: IconButtonOwnProps) {
         size="small"
         aria-controls={open ? 'color-scheme-menu' : undefined}
         aria-haspopup="true"
+        aria-label={t.theme.label}
         aria-expanded={open ? 'true' : undefined}
         {...props}
       >
@@ -76,13 +79,13 @@ export default function ColorModeIconDropdown(props: IconButtonOwnProps) {
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
         <MenuItem selected={mode === 'system'} onClick={handleMode('system')}>
-          System
+          {t.theme.system}
         </MenuItem>
         <MenuItem selected={mode === 'light'} onClick={handleMode('light')}>
-          Light
+          {t.theme.light}
         </MenuItem>
         <MenuItem selected={mode === 'dark'} onClick={handleMode('dark')}>
-          Dark
+          {t.theme.dark}
         </MenuItem>
       </Menu>
     </React.Fragment>

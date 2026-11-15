@@ -21,6 +21,7 @@ export interface HorizonSceneProps {
   exaggeration: number;
   look: React.MutableRefObject<LookState>;
   showGrid: boolean;
+  cardinals?: { N: string; E: string; S: string; W: string };
 }
 
 const D2R = Math.PI / 180;
@@ -264,7 +265,7 @@ function Label({ az, text, big }: { az: number; text: string; big: boolean }) {
   );
 }
 
-const Graticule = memo(function Graticule() {
+const Graticule = memo(function Graticule({ cardinals }: { cardinals: { N: string; E: string; S: string; W: string } }) {
   const geo = useMemo(() => {
     const pts: number[] = [];
     const seg = (a: THREE.Vector3, b: THREE.Vector3) => pts.push(a.x, a.y + EYE, a.z, b.x, b.y + EYE, b.z);
@@ -280,13 +281,13 @@ const Graticule = memo(function Graticule() {
       <lineSegments geometry={geo}>
         <lineBasicMaterial color="#8fb4ff" transparent opacity={0.16} depthWrite={false} />
       </lineSegments>
-      {[{ az: 0, t: 'N' }, { az: 90, t: 'E' }, { az: 180, t: 'S' }, { az: 270, t: 'O' }].map((l) => <Label key={l.az} az={l.az} text={l.t} big />)}
+      {[{ az: 0, t: cardinals.N }, { az: 90, t: cardinals.E }, { az: 180, t: cardinals.S }, { az: 270, t: cardinals.W }].map((l) => <Label key={l.az} az={l.az} text={l.t} big />)}
       {[30, 60, 120, 150, 210, 240, 300, 330].map((a) => <Label key={a} az={a} text={`${a}°`} big={false} />)}
     </group>
   );
 });
 
-export default function HorizonScene({ sun, earth, skyline, exaggeration, look, showGrid }: HorizonSceneProps) {
+export default function HorizonScene({ sun, earth, skyline, exaggeration, look, showGrid, cardinals = { N: 'N', E: 'E', S: 'S', W: 'O' } }: HorizonSceneProps) {
   // Sur un sommet, l'horizon descend sous 0° : le sol visible est plus bas que les yeux de l'observateur.
   const groundY = useMemo(() => Math.min(0, ...(skyline ?? [0]).map((e) => EYE + RIDGE_R * Math.tan(e * D2R) - 2)), [skyline]);
   return (
@@ -300,7 +301,7 @@ export default function HorizonScene({ sun, earth, skyline, exaggeration, look, 
       <EarthBody earth={earth} sun={sun} exaggeration={exaggeration} />
       <Ground y={groundY} />
       {skyline ? <Ridge skyline={skyline} groundY={groundY} /> : <FlatHorizon />}
-      {showGrid && <Graticule />}
+      {showGrid && <Graticule cardinals={cardinals} />}
     </Canvas>
   );
 }

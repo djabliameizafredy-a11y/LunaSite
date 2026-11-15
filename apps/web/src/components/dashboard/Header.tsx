@@ -11,6 +11,8 @@ import ColorModeIconDropdown from '@/shared-theme/ColorModeIconDropdown';
 import CustomDatePicker from './CustomDatePicker';
 import { useDashboard } from './DashboardState';
 import { SearchCommand } from './SearchCommand';
+import { useT } from '@/i18n';
+import { LanguageSwitch } from '@/components/layout/LanguageSwitch';
 
 // Repris de NavbarBreadcrumbs.tsx du template.
 const StyledBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
@@ -19,14 +21,14 @@ const StyledBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
   [`& .${breadcrumbsClasses.ol}`]: { alignItems: 'center' },
 }));
 
-const TITLES: Record<string, string> = {
-  '/dashboard': "Vue d'ensemble", '/sites': 'Catalogue des sites', '/limits': 'Données et limites', '/about': 'À propos', '/horizon': 'Horizon 3D',
-};
+const TITLE_KEYS = { '/dashboard': 'overview', '/sites': 'catalogue', '/limits': 'limits', '/about': 'about', '/horizon': 'horizon' } as const;
 
 // Repris de Header.tsx du template : fil d'Ariane à gauche ; à droite, période (au lieu de Search + notifications) et thème.
 export default function Header() {
   const pathname = usePathname();
   const { days, setDays } = useDashboard();
+  const t = useT();
+  const titleKey = TITLE_KEYS[pathname as keyof typeof TITLE_KEYS];
 
   return (
     <Stack
@@ -41,12 +43,13 @@ export default function Header() {
       }}
       spacing={2}
     >
-      <StyledBreadcrumbs aria-label="fil d'Ariane" separator={<NavigateNextRoundedIcon fontSize="small" />}>
+      <StyledBreadcrumbs aria-label={t.nav.breadcrumb} separator={<NavigateNextRoundedIcon fontSize="small" />}>
         <Typography variant="body1">LunaSite</Typography>
-        <Typography variant="body1" sx={{ color: 'text.primary', fontWeight: 600 }}>{TITLES[pathname] ?? ''}</Typography>
+        <Typography variant="body1" sx={{ color: 'text.primary', fontWeight: 600 }}>{titleKey ? t.nav[titleKey] : ''}</Typography>
       </StyledBreadcrumbs>
       <Stack direction="row" sx={{ gap: 1 }}>
         <SearchCommand />
+        <LanguageSwitch />
         <PeriodControls days={days} setDays={setDays} />
         <ColorModeIconDropdown />
       </Stack>
@@ -56,14 +59,15 @@ export default function Header() {
 
 /** Jour de début + durée ; réutilisé tel quel sur mobile (en tête de page). */
 export function PeriodControls({ days, setDays }: { days: number; setDays: (n: number) => void }) {
+  const t = useT();
   return (
     <>
       <CustomDatePicker />
-      <Select size="small" value={days} onChange={(e) => setDays(Number(e.target.value))} inputProps={{ 'aria-label': 'Durée de la période' }}>
-        <MenuItem value={1}>1 jour</MenuItem>
-        <MenuItem value={7}>7 jours</MenuItem>
-        <MenuItem value={14}>14 jours</MenuItem>
-        <MenuItem value={29}>29 jours (≈ 1 jour lunaire)</MenuItem>
+      <Select size="small" value={days} onChange={(e) => setDays(Number(e.target.value))} inputProps={{ 'aria-label': t.period.duration }}>
+        <MenuItem value={1}>{t.period.days(1)}</MenuItem>
+        <MenuItem value={7}>{t.period.days(7)}</MenuItem>
+        <MenuItem value={14}>{t.period.days(14)}</MenuItem>
+        <MenuItem value={29}>{t.period.lunarDay}</MenuItem>
       </Select>
     </>
   );

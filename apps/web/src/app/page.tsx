@@ -24,17 +24,20 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { CanadaSection, FaqSection, FinalCta, MoonSection, TrustSection } from '@/components/landing/LandingSections';
 import { SearchCommand } from '@/components/dashboard/SearchCommand';
 import { FadeIn, HorizonLine, RiseLine } from '@/components/motion/motion';
+import { useT } from '@/i18n';
+import { LanguageSwitch } from '@/components/layout/LanguageSwitch';
 
-const QUESTIONS = [
-  { icon: <WbSunnyRoundedIcon />, color: SERIES.sun, title: 'Position du Soleil', text: "Élévation et azimut par rapport à l'horizon du site, heure par heure." },
-  { icon: <PublicRoundedIcon />, color: SERIES.earth, title: 'Position de la Terre', text: "La Terre est-elle au-dessus de l'horizon ? Pas seulement « oui ou non » : sa hauteur dans le temps." },
-  { icon: <BoltRoundedIcon />, color: SERIES.sun, title: "Potentiel d'énergie", text: "Énergie indicative d'un panneau, avec ses hypothèses affichées." },
-  { icon: <SettingsInputAntennaRoundedIcon />, color: SERIES.earth, title: 'Communication directe', text: 'Les fenêtres où la Terre est visible : visibilité géométrique, pas une liaison garantie.' },
+const Q_STYLE = [
+  { icon: <WbSunnyRoundedIcon />, color: SERIES.sun },
+  { icon: <PublicRoundedIcon />, color: SERIES.earth },
+  { icon: <BoltRoundedIcon />, color: SERIES.sun },
+  { icon: <SettingsInputAntennaRoundedIcon />, color: SERIES.earth },
 ];
 
 /** Accueil : hero vidéo (Lune et sites d'atterrissage), puis les 4 visualisations du défi. */
 export default function Home() {
   const video = useRef<HTMLVideoElement>(null);
+  const t = useT();
   // L'image de couverture est le candidat LCP de l'accueil : on la demande en priorité haute.
   preload('/hero/poster.jpg', { as: 'image', fetchPriority: 'high' });
 
@@ -82,37 +85,37 @@ export default function Home() {
             <CustomIcon color="#fff" size="2rem" />
             <Typography variant="h6" component="p" sx={{ fontWeight: 700, mr: 'auto' }}>LunaSite</Typography>
             <Box sx={{ color: '#fff' }}><SearchCommand compact /></Box>
-            <Button component={Link} href="/dashboard" size="small" sx={{ color: '#fff' }}>Dashboard</Button>
+            <LanguageSwitch onDark />
+            <Button component={Link} href="/dashboard" size="small" sx={{ color: '#fff', display: { xs: 'none', sm: 'inline-flex' } }}>{t.nav.dashboard}</Button>
             <ColorModeIconDropdown />
           </Stack>
 
           <Stack sx={{ maxWidth: 760, pt: { xs: '18vh', md: '20vh' }, pb: 8, gap: 3 }}>
-            <FadeIn sx={{ alignSelf: 'flex-start' }}><Chip label="NASA Space Apps 2026 · Défi CLPS" size="small" sx={{ alignSelf: 'flex-start', color: '#fff', borderColor: 'rgba(255,255,255,0.35)', bgcolor: 'rgba(255,255,255,0.08)' }} variant="outlined" /></FadeIn>
+            <FadeIn sx={{ alignSelf: 'flex-start' }}><Chip label={t.home.badge} size="small" sx={{ alignSelf: 'flex-start', color: '#fff', borderColor: 'rgba(255,255,255,0.35)', bgcolor: 'rgba(255,255,255,0.08)' }} variant="outlined" /></FadeIn>
             <Typography component="h1" sx={{ fontSize: { xs: '2.4rem', md: '3.6rem' }, fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.02em' }}>
-              <RiseLine delay={350}>Où se poser au pôle Sud</RiseLine>
-              <RiseLine delay={440}>de la Lune ?</RiseLine>
+              <RiseLine delay={350}>{t.home.titleLine1}</RiseLine>
+              <RiseLine delay={440}>{t.home.titleLine2}</RiseLine>
             </Typography>
             <HorizonLine color={SERIES.sun} delay={120} />
             <FadeIn delay={650}>
             <Typography sx={{ fontSize: { xs: '1rem', md: '1.15rem' }, color: 'rgba(255,255,255,0.8)', maxWidth: 520 }}>
-              Comparez les sites d'atterrissage et les dates : Soleil, Terre, énergie et fenêtres de communication,
-              calculés à partir du relief NASA LOLA.
+              {t.home.subtitle}
             </Typography>
             </FadeIn>
             <FadeIn delay={720}>
             <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1.5 }}>
               <Button component={Link} href="/dashboard" variant="contained" size="large" endIcon={<ChevronRightRoundedIcon />}>
-                Explorer les sites
+                {t.common.exploreSites}
               </Button>
               <Button component={Link} href="/sites" variant="outlined" size="large" startIcon={<TableRowsRoundedIcon />}
                 sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.4)', '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' } }}>
-                Voir le catalogue
+                {t.common.seeCatalogue}
               </Button>
             </Stack>
             </FadeIn>
             <FadeIn delay={800}>
             <Stack direction="row" sx={{ gap: 3, flexWrap: 'wrap', pt: 1 }}>
-              {[['13', "sites d'atterrissage"], ['9', 'avec relief LOLA'], ['4', 'visualisations']].map(([n, l]) => (
+              {t.home.stats.map(([n, l]) => (
                 <Box key={l}>
                   <Typography sx={{ fontSize: '1.6rem', fontWeight: 700, lineHeight: 1.1 }}>{n}</Typography>
                   <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>{l}</Typography>
@@ -125,25 +128,24 @@ export default function Home() {
       </Box>
 
       <Container maxWidth="lg" component="section" sx={{ py: { xs: 6, md: 10 } }}>
-        <Typography component="h2" variant="h4" sx={{ mb: 1 }}>Quatre questions pour chaque site</Typography>
+        <Typography component="h2" variant="h4" sx={{ mb: 1 }}>{t.home.questionsTitle}</Typography>
         <Typography sx={{ color: 'text.secondary', mb: 4, maxWidth: 640 }}>
-          Au pôle Sud, le Soleil et la Terre restent très bas sur l'horizon : quelques mètres de relief changent tout.
-          LunaSite montre ces quatre résultats, et dit toujours d'où vient chaque chiffre.
+          {t.home.questionsIntro}
         </Typography>
         <Grid container spacing={2}>
-          {QUESTIONS.map((q, i) => (
-            <Grid key={q.title} size={{ xs: 12, sm: 6, md: 3 }}>
+          {t.home.questions.map(([title, text], i) => (
+            <Grid key={title} size={{ xs: 12, sm: 6, md: 3 }}>
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
-                  <Box sx={{ color: q.color, mb: 1 }}>{q.icon}</Box>
-                  <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 600 }} gutterBottom>{i + 1} · {q.title}</Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>{q.text}</Typography>
+                  <Box sx={{ color: Q_STYLE[i].color, mb: 1 }} aria-hidden="true">{Q_STYLE[i].icon}</Box>
+                  <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 600 }} gutterBottom>{i + 1} · {title}</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>{text}</Typography>
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
-        <Typography variant="caption" component="p" sx={{ color: 'text.secondary', mt: 3 }}>Vidéo d'accueil : rendu de l'équipe LunaSite.</Typography>
+        <Typography variant="caption" component="p" sx={{ color: 'text.secondary', mt: 3 }}>{t.home.heroCredit}</Typography>
       </Container>
       <MoonSection />
       <TrustSection />

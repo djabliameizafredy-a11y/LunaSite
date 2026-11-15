@@ -1,4 +1,5 @@
 import type { ApiError, EarthVisibilityResult, HorizonProfile, MissionScore, MoonGeometry, Site, SiteValidation, SolarResult, ValidationSummary } from '@lunasite/shared-types';
+import { currentDict } from '@/i18n';
 
 /** URL de l'API Express (apps/api). Surchargée par NEXT_PUBLIC_API_URL en déploiement. */
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -21,22 +22,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     res = await fetch(`${API_URL}/api${path}`, { ...init, signal: ctrl.signal, headers: { 'Content-Type': 'application/json', ...init?.headers } });
   } catch (err) {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      throw new ApiRequestError(0, 'OFFLINE', 'Vous êtes hors ligne. Reconnectez-vous puis rechargez la page.');
+      throw new ApiRequestError(0, 'OFFLINE', currentDict().states.offline);
     }
     if (ctrl.signal.aborted) {
-      throw new ApiRequestError(0, 'TIMEOUT', 'Le calcul a pris trop de temps. Réessayez, ou choisissez une période plus courte.');
+      throw new ApiRequestError(0, 'TIMEOUT', currentDict().states.timeout);
     }
     console.warn(`[LunaSite] API injoignable sur ${API_URL} (en local : npm run api:dev).`, err);
-    throw new ApiRequestError(0, 'NETWORK', 'Connexion au serveur de calcul impossible. Vérifiez votre réseau et réessayez dans un instant.');
+    throw new ApiRequestError(0, 'NETWORK', currentDict().states.network);
   } finally {
     clearTimeout(timer);
   }
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     const e = (body as ApiError | null)?.error;
-    const fallback = res.status >= 500
-      ? 'Une erreur est survenue de notre côté. Réessayez dans quelques instants.'
-      : `La demande n'a pas pu être traitée (erreur ${res.status}).`;
+    const fallback = res.status >= 500 ? currentDict().states.server : currentDict().states.request(res.status);
     throw new ApiRequestError(res.status, e?.code ?? 'INTERNAL', e?.message ?? fallback, e?.field);
   }
   return body as T;

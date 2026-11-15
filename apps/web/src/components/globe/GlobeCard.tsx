@@ -13,6 +13,7 @@ import { api } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { fmtDateTimeUTC } from '@/lib/format';
 import { useDashboard } from '@/components/dashboard/DashboardState';
+import { useT } from '@/i18n';
 
 const MoonGlobe = dynamic(() => import('./MoonGlobe'), {
   ssr: false,
@@ -22,28 +23,29 @@ const MoonGlobe = dynamic(() => import('./MoonGlobe'), {
 /** Globe 3D : sites du catalogue + terminateur jour/nuit réel à la date choisie (00:00 UTC). */
 export function GlobeCard() {
   const { sites, siteId, setSiteId, date, selectedSite } = useDashboard();
-  const t = `${date}T00:00:00Z`;
-  const geo = useAsync(() => api.moonGeometry(t), [t]);
+  const t = useT();
+  const at = `${date}T00:00:00Z`;
+  const geo = useAsync(() => api.moonGeometry(at), [at]);
   return (
     <Card variant="outlined" sx={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <CardContent sx={{ pb: 1 }}>
-        <Typography component="h2" variant="subtitle2" sx={{ fontWeight: 600 }}>Globe lunaire</Typography>
+        <Typography component="h2" variant="subtitle2" sx={{ fontWeight: 600 }}>{t.globe.title}</Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Glisser pour tourner, molette pour zoomer · cliquez sur un site pour le choisir
+          {t.globe.help}
         </Typography>
       </CardContent>
       <Box sx={{ position: 'relative', flex: 1, minHeight: { xs: 340, md: 460 }, bgcolor: '#000' }}
-        role="img" aria-label="Globe 3D de la Lune avec les sites du catalogue et la limite jour/nuit">
+        role="img" aria-label={t.globe.aria}>
         <MoonGlobe sites={sites.data ?? []} selectedId={siteId} onSelect={setSiteId} geometry={geo.data}
-          labels={{ sun: 'Soleil au zénith', earth: 'Terre au zénith' }} />
+          labels={{ sun: t.globe.sunLabel, earth: t.globe.earthLabel }} />
       </Box>
       <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ px: 2, py: 1.5, gap: 1.5, alignItems: { sm: 'center' }, borderTop: '1px solid', borderColor: 'divider' }}>
         <Typography variant="caption" sx={{ color: 'text.secondary', mr: 'auto', lineHeight: 1.5 }}>
-          Éclairage réel au {fmtDateTimeUTC(t)} (point subsolaire calculé) · texture du sol illustrative, pas une mosaïque NASA.
+          {t.globe.caption(fmtDateTimeUTC(at))}
         </Typography>
         {selectedSite && (
           <Button component={NextLink} href="/dashboard" size="small" variant="outlined" endIcon={<ChevronRightRoundedIcon />} sx={{ flexShrink: 0 }}>
-            Ouvrir {selectedSite.name.split(' — ')[0]}
+            {t.globe.open(selectedSite.name.split(' — ')[0])}
           </Button>
         )}
       </Stack>

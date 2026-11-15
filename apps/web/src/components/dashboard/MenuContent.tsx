@@ -16,26 +16,28 @@ import CompareArrowsRoundedIcon from '@mui/icons-material/CompareArrowsRounded';
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 import HelpOutlineRoundedIcon from '@mui/icons-material/HelpOutlineRounded';
+import { useT } from '@/i18n';
 
-type Item = { text: string; href: string; icon: React.ReactNode; soon?: boolean };
+type Item = { key: 'home' | 'overview' | 'horizon' | 'catalogue' | 'compare' | 'recommendations' | 'about' | 'limits'; href: string; icon: React.ReactNode; soon?: boolean };
 
 // Repris de MenuContent.tsx du template : liste principale en haut, liste secondaire en bas.
 const mainListItems: Item[] = [
-  { text: 'Accueil', href: '/', icon: <HomeRoundedIcon /> },
-  { text: "Vue d'ensemble", href: '/dashboard', icon: <AnalyticsRoundedIcon /> },
-  { text: 'Horizon 3D', href: '/horizon', icon: <LandscapeRoundedIcon /> },
-  { text: 'Catalogue des sites', href: '/sites', icon: <TableRowsRoundedIcon /> },
-  { text: 'Comparer', href: '/compare', icon: <CompareArrowsRoundedIcon />, soon: true },
-  { text: 'Recommandations', href: '/recommendations', icon: <EmojiEventsRoundedIcon />, soon: true },
+  { key: 'home', href: '/', icon: <HomeRoundedIcon /> },
+  { key: 'overview', href: '/dashboard', icon: <AnalyticsRoundedIcon /> },
+  { key: 'horizon', href: '/horizon', icon: <LandscapeRoundedIcon /> },
+  { key: 'catalogue', href: '/sites', icon: <TableRowsRoundedIcon /> },
+  { key: 'compare', href: '/compare', icon: <CompareArrowsRoundedIcon />, soon: true },
+  { key: 'recommendations', href: '/recommendations', icon: <EmojiEventsRoundedIcon />, soon: true },
 ];
 
 const secondaryListItems: Item[] = [
-  { text: 'À propos', href: '/about', icon: <HelpOutlineRoundedIcon /> },
-  { text: 'Données et limites', href: '/limits', icon: <InfoRoundedIcon /> },
+  { key: 'about', href: '/about', icon: <HelpOutlineRoundedIcon /> },
+  { key: 'limits', href: '/limits', icon: <InfoRoundedIcon /> },
 ];
 
 export default function MenuContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const t = useT();
   const render = (item: Item) => (
     <ListItem key={item.href} disablePadding sx={{ display: 'block' }}>
       <ListItemButton
@@ -46,8 +48,8 @@ export default function MenuContent({ onNavigate }: { onNavigate?: () => void })
         onClick={item.soon ? undefined : onNavigate}
       >
         <ListItemIcon>{item.icon}</ListItemIcon>
-        <ListItemText primary={item.text} />
-        {item.soon && <Chip size="small" label="bientôt" />}
+        <ListItemText primary={t.nav[item.key]} />
+        {item.soon && <Chip size="small" label={t.nav.soon} />}
       </ListItemButton>
     </ListItem>
   );

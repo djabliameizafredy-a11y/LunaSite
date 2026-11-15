@@ -9,45 +9,19 @@ import Typography from '@mui/material/Typography';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import { CustomIcon } from '@/components/dashboard/AppNavbar';
+import { useT } from '@/i18n';
 
 type FooterLink = { label: string; href: string; external?: boolean };
 
-const COLUMNS: { title: string; links: FooterLink[] }[] = [
-  {
-    title: 'Explorer',
-    links: [
-      { label: "Vue d'ensemble", href: '/dashboard' },
-      { label: 'Catalogue des sites', href: '/sites' },
-      { label: 'Données et limites', href: '/limits' },
-      { label: 'À propos', href: '/about' },
-    ],
-  },
-  {
-    title: 'Sources NASA',
-    links: [
-      { label: 'LOLA (relief, PDS)', href: 'https://pds-geosciences.wustl.edu/missions/lro/lola.htm', external: true },
-      { label: 'JPL Horizons', href: 'https://ssd.jpl.nasa.gov/horizons/', external: true },
-      { label: 'LROC QuickMap', href: 'https://quickmap.lroc.im-ldi.com/', external: true },
-      { label: 'Moon Trek', href: 'https://trek.nasa.gov/moon/', external: true },
-    ],
-  },
-  {
-    title: 'Projet',
-    links: [
-      { label: 'NASA Space Apps 2026', href: 'https://www.spaceappschallenge.org/', external: true },
-      { label: 'Code source (GitHub)', href: 'https://github.com/djabliameizafredy-a11y/LunaSite', external: true },
-    ],
-  },
-];
-
 function FooterAnchor({ link }: { link: FooterLink }) {
+  const t = useT();
   const common = { variant: 'body2' as const, underline: 'hover' as const, color: 'text.secondary', sx: { display: 'inline-flex', alignItems: 'center', gap: 0.5, '&:hover': { color: 'text.primary' } } };
   if (link.external) {
     return (
       <Link href={link.href} target="_blank" rel="noopener noreferrer" {...common}>
         {link.label}
         <OpenInNewRoundedIcon sx={{ fontSize: '0.85em', opacity: 0.6 }} aria-hidden="true" />
-        <Box component="span" sx={visuallyHidden}>(nouvel onglet)</Box>
+        <Box component="span" sx={visuallyHidden}>{t.common.newTab}</Box>
       </Link>
     );
   }
@@ -58,6 +32,26 @@ const visuallyHidden = { position: 'absolute', width: 1, height: 1, overflow: 'h
 
 /** Pied de page commun (accueil + dashboard) : identité, navigation, sources, mention pédagogique. */
 export function SiteFooter() {
+  const t = useT();
+  const COLUMNS: { title: string; links: FooterLink[] }[] = [
+    { title: t.footer.explore, links: [
+      { label: t.nav.overview, href: '/dashboard' },
+      { label: t.nav.horizon, href: '/horizon' },
+      { label: t.nav.catalogue, href: '/sites' },
+      { label: t.nav.limits, href: '/limits' },
+      { label: t.nav.about, href: '/about' },
+    ] },
+    { title: t.footer.sources, links: [
+      { label: t.footer.lola, href: 'https://pds-geosciences.wustl.edu/missions/lro/lola.htm', external: true },
+      { label: 'JPL Horizons', href: 'https://ssd.jpl.nasa.gov/horizons/', external: true },
+      { label: 'LROC QuickMap', href: 'https://quickmap.lroc.im-ldi.com/', external: true },
+      { label: 'Moon Trek', href: 'https://trek.nasa.gov/moon/', external: true },
+    ] },
+    { title: t.footer.project, links: [
+      { label: 'NASA Space Apps 2026', href: 'https://www.spaceappschallenge.org/', external: true },
+      { label: t.footer.code, href: 'https://github.com/djabliameizafredy-a11y/LunaSite', external: true },
+    ] },
+  ];
   return (
     <Box component="footer" sx={{ width: '100%', mt: 6 }}>
       <Divider />
@@ -68,8 +62,7 @@ export function SiteFooter() {
             <Typography component="p" variant="subtitle1" sx={{ fontWeight: 700 }}>LunaSite</Typography>
           </Stack>
           <Typography variant="body2" sx={{ color: 'text.secondary', maxWidth: '42ch' }}>
-            Comparer les sites d'atterrissage du pôle Sud lunaire : Soleil, Terre, énergie et fenêtres de
-            communication, calculés à partir du relief mesuré par la NASA.
+            {t.footer.tagline}
           </Typography>
         </Grid>
         {COLUMNS.map((col) => (
@@ -84,10 +77,10 @@ export function SiteFooter() {
       <Divider />
       <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ py: 2.5, gap: 1.5, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' } }}>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          © 2026 Équipe LunaSite · Projet étudiant NASA Space Apps, non officiel (ni NASA, ni ASC) · Outil pédagogique, pas une recommandation opérationnelle d'atterrissage · Sans compte ni cookie, aucune donnée personnelle collectée.
+          {t.footer.legal}
         </Typography>
         <Link href="https://github.com/djabliameizafredy-a11y/LunaSite" target="_blank" rel="noopener noreferrer"
-          aria-label="Code source sur GitHub (nouvel onglet)" color="text.secondary" sx={{ display: 'inline-flex', '&:hover': { color: 'text.primary' } }}>
+          aria-label={t.footer.codeAria} color="text.secondary" sx={{ display: 'inline-flex', '&:hover': { color: 'text.primary' } }}>
           <GitHubIcon fontSize="small" />
         </Link>
       </Stack>
