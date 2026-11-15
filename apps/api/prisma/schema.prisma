@@ -48,37 +48,39 @@ model NasaDataset {
   importedAt DateTime @map("imported_at") @db.Timestamptz(3)
   notes      Json?
 
-  terrainData      TerrainData[]
-  missionWindows   MissionWindow[]
-  earthVisibility  EarthVisibility[]
-  missionScores    MissionScore[]
+  terrainData          TerrainData[]
+  missionWindows       MissionWindow[]
+  earthVisibility      EarthVisibility[]
+  missionScores        MissionScore[]
+  referenceEphemerides ReferenceEphemeris[]
 
   @@map("nasa_datasets")
 }
 
 /// Sites candidats (catalogue). `id` = identifiant lisible utilisé par l'API (ex. "malapert").
 model LandingSite {
-  id                 String            @id
-  name               String
-  region             String
+  id                String            @id
+  name              String
+  region            String
   /// Latitude sélénographique, degrés, Sud négatif.
-  latitude           Float
+  latitude          Float
   /// Longitude Est positive, -180..180.
-  longitude          Float
+  longitude         Float
   /// Hauteur / sphère de 1737,4 km, mètres. NULL = inconnue.
-  elevation          Float?
-  terrainType        String?           @map("terrain_type")
-  description        String
-  origin             SiteOrigin
-  coordinatesStatus  CoordinatesStatus @map("coordinates_status")
-  coordinatesSource  String            @map("coordinates_source")
+  elevation         Float?
+  terrainType       String?           @map("terrain_type")
+  description       String
+  origin            SiteOrigin
+  coordinatesStatus CoordinatesStatus @map("coordinates_status")
+  coordinatesSource String            @map("coordinates_source")
   /// Site de démonstration (jamais présenté comme donnée scientifique).
-  isMock             Boolean           @default(false) @map("is_mock")
+  isMock            Boolean           @default(false) @map("is_mock")
 
-  terrainData     TerrainData[]
-  missionWindows  MissionWindow[]
-  earthVisibility EarthVisibility[]
-  missionScores   MissionScore[]
+  terrainData          TerrainData[]
+  missionWindows       MissionWindow[]
+  earthVisibility      EarthVisibility[]
+  missionScores        MissionScore[]
+  referenceEphemerides ReferenceEphemeris[]
 
   @@index([region])
   @@map("landing_sites")
@@ -86,24 +88,24 @@ model LandingSite {
 
 /// Relief et risque d'ombre d'un site. Un enregistrement par (site, jeu de données).
 model TerrainData {
-  id                  String   @id @default(uuid())
-  siteId              String   @map("site_id")
-  datasetId           String   @map("source_dataset_id")
+  id                  String  @id @default(uuid())
+  siteId              String  @map("site_id")
+  datasetId           String  @map("source_dataset_id")
   elevation           Float?
   /// Pente moyenne (°) sur un disque de 250 m de rayon.
   slope               Float?
-  maxSlope            Float?   @map("max_slope")
+  maxSlope            Float?  @map("max_slope")
   /// Relief local (m) : max - min des hauteurs sur ce disque.
-  localRelief         Float?   @map("local_relief")
+  localRelief         Float?  @map("local_relief")
   /// NULL tant qu'aucune définition validée (décision 5).
-  shadowRisk          Float?   @map("shadow_risk")
+  shadowRisk          Float?  @map("shadow_risk")
   /// Élévation de l'horizon (°) pour chaque azimut entier 0..359 ; NULL si non calculé.
-  horizonElevationDeg Json?    @map("horizon_elevation_deg")
-  maxHorizonDeg       Float?   @map("max_horizon_deg")
+  horizonElevationDeg Json?   @map("horizon_elevation_deg")
+  maxHorizonDeg       Float?  @map("max_horizon_deg")
   /// Plus courte portée (km) du profil (limitée par le bord du DEM).
-  minRangeKm          Float?   @map("min_range_km")
-  maxRangeKm          Float?   @map("max_range_km")
-  isMock              Boolean  @default(false) @map("is_mock")
+  minRangeKm          Float?  @map("min_range_km")
+  maxRangeKm          Float?  @map("max_range_km")
+  isMock              Boolean @default(false) @map("is_mock")
 
   site    LandingSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
   dataset NasaDataset @relation(fields: [datasetId], references: [id])
@@ -115,17 +117,17 @@ model TerrainData {
 
 /// Résumé d'ensoleillement d'un site sur une période [startDate, endDate).
 model MissionWindow {
-  id                String           @id @default(uuid())
-  siteId            String           @map("site_id")
-  startDate         DateTime         @map("start_date") @db.Timestamptz(3)
-  endDate           DateTime         @map("end_date") @db.Timestamptz(3)
-  stepMinutes       Int              @map("step_minutes")
-  sunExposureHours  Float?           @map("sun_exposure_hours")
-  darknessHours     Float?           @map("darkness_hours")
-  calculationLevel  CalculationLevel @map("calculation_level")
-  methodVersion     String           @map("method_version")
-  isMock            Boolean          @default(false) @map("is_mock")
-  computedAt        DateTime         @default(now()) @map("computed_at") @db.Timestamptz(3)
+  id               String           @id @default(uuid())
+  siteId           String           @map("site_id")
+  startDate        DateTime         @map("start_date") @db.Timestamptz(3)
+  endDate          DateTime         @map("end_date") @db.Timestamptz(3)
+  stepMinutes      Int              @map("step_minutes")
+  sunExposureHours Float?           @map("sun_exposure_hours")
+  darknessHours    Float?           @map("darkness_hours")
+  calculationLevel CalculationLevel @map("calculation_level")
+  methodVersion    String           @map("method_version")
+  isMock           Boolean          @default(false) @map("is_mock")
+  computedAt       DateTime         @default(now()) @map("computed_at") @db.Timestamptz(3)
 
   site     LandingSite   @relation(fields: [siteId], references: [id], onDelete: Cascade)
   datasets NasaDataset[]
@@ -185,4 +187,25 @@ model MissionScore {
 
   @@unique([siteId, startDate, endDate, stepMinutes, methodVersion, calculationLevel])
   @@map("mission_scores")
+}
+
+/// Positions de référence Soleil / Terre vues depuis chaque site, importées de JPL Horizons (scripts/import-horizons.ts).
+/// Sert à valider notre moteur géométrique (écarts exposés par GET /api/validation). Corps : 'sun' | 'earth'.
+model ReferenceEphemeris {
+  id           String   @id @default(uuid())
+  siteId       String   @map("site_id")
+  datasetId    String   @map("dataset_id")
+  body         String
+  tUtc         DateTime @map("t_utc") @db.Timestamptz(3)
+  /// Azimut apparent (°), depuis le Nord vers l'Est, [0, 360).
+  azimuthDeg   Float    @map("azimuth_deg")
+  /// Élévation apparente (°) au-dessus de l'horizon géométrique local.
+  elevationDeg Float    @map("elevation_deg")
+
+  site    LandingSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  dataset NasaDataset @relation(fields: [datasetId], references: [id])
+
+  @@unique([siteId, datasetId, body, tUtc])
+  @@index([datasetId])
+  @@map("reference_ephemerides")
 }

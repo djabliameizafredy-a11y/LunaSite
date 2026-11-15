@@ -140,3 +140,65 @@ export interface ApiError {
     requestId?: string;
   };
 }
+
+/* ---------- Validation contre JPL Horizons (GET /api/validation, /api/sites/:id/validation) ---------- */
+
+export type ReferenceBody = 'sun' | 'earth';
+
+export interface BodyComparison {
+  body: ReferenceBody;
+  samples: number;
+  period: { start: string; end: string } | null;
+  /** Écarts LunaSite − Horizons, degrés. null = aucune référence (jamais 0 par défaut). */
+  maxAbsElevationDiffDeg: number | null;
+  meanAbsElevationDiffDeg: number | null;
+  maxAbsAzimuthDiffDeg: number | null;
+  /** Instants où les deux calculs divergent sur « au-dessus / au-dessous de l'horizon plat ». */
+  visibilityDisagreements: number;
+}
+
+export interface ReferenceMeta {
+  datasetId: string; source: string; apiVersion: string; ephemeris: string; centerFrame: string;
+  fetchedAt: string; start: string; stop: string; step: string; sha256: string;
+}
+
+export interface ValidationEnvelope {
+  available: boolean;
+  /** Raison lisible quand available = false. */
+  reason: string | null;
+  source: ReferenceMeta | null;
+  referenceSource: 'embedded' | 'database';
+  notes: string[];
+}
+
+export interface SiteValidation extends ValidationEnvelope {
+  siteId: string;
+  siteName: string;
+  sun: BodyComparison | null;
+  earth: BodyComparison | null;
+}
+
+export interface ValidationSummary extends ValidationEnvelope {
+  summary: { sites: number; maxAbsElevationDiffDeg: number | null; maxAbsAzimuthDiffDeg: number | null };
+  sites: Array<{ siteId: string; siteName: string; sun: BodyComparison; earth: BodyComparison }>;
+}
+
+/** GET /api/sites/:id/horizon : profil d'horizon LOLA (élévation par azimut, depuis le Nord vers l'Est). */
+export interface HorizonProfile {
+  siteId: string;
+  available: boolean;
+  azimuthStepDeg: number | null;
+  /** elevationDeg[i] = élévation de l'horizon à l'azimut i × azimuthStepDeg. null = pas de relief chargé. */
+  elevationDeg: number[] | null;
+  maxHorizonDeg: number | null;
+  maxRangeKm: number | null;
+  source: { dataset: string; product: string; url: string; resolutionM: number } | null;
+}
+
+/** GET /api/moon/geometry : points subsolaire et subterrestre (repère lunaire fixe, longitude Est). */
+export interface MoonGeometry {
+  t: string;
+  frame: string;
+  subSolar: { latDeg: number; lonDeg: number };
+  subEarth: { latDeg: number; lonDeg: number };
+}

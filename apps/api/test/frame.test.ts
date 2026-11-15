@@ -21,3 +21,22 @@ describe('repère lunaire (modèle IAU) vs libration astronomy-engine', () => {
     });
   }
 });
+
+describe('GET /api/moon/geometry (globe 3D : terminateur et point subterrestre)', () => {
+  it('point subsolaire proche de l’équateur (axe lunaire ~1,5°) et point subterrestre proche de 0°/0° (libration)', async () => {
+    const { createApp } = await import('../src/app');
+    const request = (await import('supertest')).default;
+    const r = await request(createApp()).get('/api/moon/geometry?t=2026-11-15T00:00:00Z').expect(200);
+    expect(Math.abs(r.body.subSolar.latDeg)).toBeLessThan(1.7);
+    expect(r.body.subSolar.lonDeg).toBeGreaterThanOrEqual(-180);
+    expect(r.body.subSolar.lonDeg).toBeLessThanOrEqual(180);
+    expect(Math.abs(r.body.subEarth.latDeg)).toBeLessThan(7.5);
+    expect(Math.abs(r.body.subEarth.lonDeg)).toBeLessThan(8.5);
+    expect(r.body.t).toBe('2026-11-15T00:00:00.000Z');
+  });
+  it('date invalide : 400 lisible', async () => {
+    const { createApp } = await import('../src/app');
+    const request = (await import('supertest')).default;
+    await request(createApp()).get('/api/moon/geometry?t=pas-une-date').expect(400);
+  });
+});

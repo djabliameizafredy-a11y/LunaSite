@@ -7,6 +7,10 @@ import { SITES, SITES_BY_ID } from './data/sites';
 import { catalogueState } from './data/catalogue-state';
 import { compareBody, dayToDate, HttpError, LIMITS, panelQuery, parse, periodQuery } from './common/http';
 import { earthAnalysis, gridFor, makePeriod, missionScore, solarAnalysis } from './modules/solar/analysis';
+import { compareWithHorizons, VALIDATION_NOTES } from './modules/validation/compare';
+import { getReference, referenceState } from './data/reference';
+import { TERRAIN_META, terrainInfo } from './data/terrain';
+import { bodyState, type Vec3 } from './engine/lunar-frame';
 
 const coords = z.object({
   lat: z.coerce.number().min(-90).max(90).optional(),
@@ -65,6 +69,34 @@ export function createApp() {
         terrainMetrics: site.terrain.slopeDeg != null && site.terrain.shadowRisk != null,
       },
     };
+  }));
+
+  // Profil d'horizon LOLA brut (vue horizon 3D). Pas de relief chargé : available=false, jamais d'horizon inventé.
+  app.get('/api/sites/:id/horizon', wrap((req) => {
+    const site = resolveSite(req.params.id, {});
+    const t = site.terrain.horizonMask ? terrainInfo(site.id) : undefined;
+    return {
+      siteId: site.id,
+      available: Boolean(t),
+      azimuthStepDeg: t ? 360 / t.horizonElevationDeg.length : null,
+      elevationDeg: t ? t.horizonElevationDeg : null,
+      maxHorizonDeg: t ? t.maxHorizonDeg : null,
+      maxRangeKm: TERRAIN_META?.maxRangeKm ?? null,
+      source: t && TERRAIN_META ? { dataset: TERRAIN_META.dataset, product: TERRAIN_META.product, url: TERRAIN_META.url, resolutionM: TERRAIN_META.resolutionM } : null,
+    };
+  }));
+
+  // Géométrie globale de la Lune à un instant : points subsolaire (terminateur jour/nuit) et subterrestre.
+  app.get('/api/moon/geometry', wrap((req) => {
+    const raw = typeof req.query.t === 'string' ? req.query.t : new Date().toISOString();
+    const t = new Date(raw);
+    if (Number.isNaN(t.getTime())) throw new HttpError(400, 'INVALID_INPUT', 't : date ISO 8601 attendue (ex. 2026-11-15T00:00:00Z)', 't');
+    const b = bodyState(t);
+    const latLon = (v: Vec3) => {
+      const r = Math.hypot(v[0], v[1], v[2]);
+      return { latDeg: Math.round(Math.asin(v[2] / r) * 180 / Math.PI * 1e4) / 1e4, lonDeg: Math.round(Math.atan2(v[1], v[0]) * 180 / Math.PI * 1e4) / 1e4 };
+    };
+    return { t: t.toISOString(), frame: 'Lune fixe (IAU), longitude Est', subSolar: latLon(b.sunMoonFixed), subEarth: latLon(b.earthMoonFixed) };
   }));
 
   app.get('/api/sites/:id/solar', wrap((req) => {
@@ -136,6 +168,39 @@ export function createApp() {
         : "Tri par score partiel (solaire + communication) car le score terrain n'existe pas pour tous les sites ; filtrez avec ?region=south-pole pour un classement avec le terrain. Pas une recommandation opérationnelle d'atterrissage.",
       ranking,
     };
+  }));
+
+  // Validation de notre moteur contre JPL Horizons (références importées par scripts/import-horizons.ts).
+  const validationFor = (site: Site) => {
+    const ref = getReference().sites[site.id];
+    return {
+      siteId: site.id, siteName: site.name,
+      sun: compareWithHorizons(site, 'sun', ref?.sun ?? []),
+      earth: compareWithHorizons(site, 'earth', ref?.earth ?? []),
+    };
+  };
+  const validationEnvelope = () => {
+    const { meta } = getReference();
+    return {
+      available: meta != null,
+      reason: meta ? null : "Références JPL Horizons non importées : lancer « npm run data:horizons » dans apps/api.",
+      source: meta, referenceSource: referenceState.source, notes: VALIDATION_NOTES,
+    };
+  };
+
+  app.get('/api/validation', wrap(() => {
+    const env = validationEnvelope();
+    const sites = env.available ? SITES.map(validationFor).filter((v) => v.sun.samples + v.earth.samples > 0) : [];
+    const worst = (k: 'maxAbsElevationDiffDeg' | 'maxAbsAzimuthDiffDeg') =>
+      sites.length ? Math.max(...sites.flatMap((v) => [v.sun[k] ?? 0, v.earth[k] ?? 0])) : null;
+    return { ...env, summary: { sites: sites.length, maxAbsElevationDiffDeg: worst('maxAbsElevationDiffDeg'), maxAbsAzimuthDiffDeg: worst('maxAbsAzimuthDiffDeg') }, sites };
+  }));
+
+  app.get('/api/sites/:id/validation', wrap((req) => {
+    const site = SITES_BY_ID.get(req.params.id);
+    if (!site) throw new HttpError(404, 'NOT_FOUND', `Site inconnu : ${req.params.id}`, 'id');
+    const env = validationEnvelope();
+    return { ...env, ...(env.available ? validationFor(site) : { siteId: site.id, siteName: site.name, sun: null, earth: null }) };
   }));
 
   app.use((req, _res, next) => next(new HttpError(404, 'NOT_FOUND', `Route inconnue : ${req.method} ${req.path}`)));

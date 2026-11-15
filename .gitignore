@@ -4,3 +4,5 @@ data/lola/raw/*.img
 .data
 apps/api/.env
 apps/api/src/generated/
+.next/
+apps/web/next-env.d.ts

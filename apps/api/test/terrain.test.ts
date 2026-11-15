@@ -92,3 +92,23 @@ describe('API : niveau de calcul et provenance', () => {
     expect(r.body.terrain.shadowRisk).toBeNull(); // jamais inventé
   });
 });
+
+describe('GET /api/sites/:id/horizon (profil LOLA pour la vue 3D)', () => {
+  const app = createApp();
+  it('renvoie les 360 élévations d’horizon LOLA, échantillonnées depuis le Nord vers l’Est', async () => {
+    const r = await request(app).get('/api/sites/malapert/horizon').expect(200);
+    expect(r.body.siteId).toBe('malapert');
+    expect(r.body.available).toBe(true);
+    expect(r.body.azimuthStepDeg).toBe(1);
+    expect(r.body.elevationDeg).toEqual(terrainInfo('malapert').horizonElevationDeg);
+    expect(r.body.source.dataset).toBe(TERRAIN_META?.dataset);
+  });
+  it('site sans relief : available=false, jamais un horizon inventé', async () => {
+    const r = await request(app).get('/api/sites/apollo11/horizon').expect(200);
+    expect(r.body.available).toBe(false);
+    expect(r.body.elevationDeg).toBeNull();
+  });
+  it('site inconnu : 404', async () => {
+    await request(app).get('/api/sites/inconnu/horizon').expect(404);
+  });
+});

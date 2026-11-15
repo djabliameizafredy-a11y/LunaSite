@@ -7,7 +7,9 @@
   ],
   "scripts": {
     "api:dev": "npm run dev -w @lunasite/api",
-    "api:test": "npm run test -w @lunasite/api"
+    "api:test": "npm run test -w @lunasite/api",
+    "web:dev": "npm run dev -w @lunasite/web",
+    "web:build": "npm run build -w @lunasite/web"
   },
   "allowScripts": {
     "prisma@7.10.1": true,
