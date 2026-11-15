@@ -147,6 +147,17 @@ Le fichier `render.yaml` (Blueprint) crée deux services web Node 22 depuis ce d
 Prisma (`postinstall` → `prisma generate`, qui fonctionne sans base) sont des dépendances de développement.
 Offre gratuite : l'API se met en veille après 15 min ; le premier appel peut prendre ~50 s (le client attend jusqu'à 60 s).
 
+### Base de données en production et tâche « keep-alive »
+
+- Brancher Supabase : sur Render, service `lunasite-api` > **Environment** > `DATABASE_URL` = pooler **mode transaction**
+  (port 6543, `?pgbouncer=true`). Au redémarrage, `/api/health` doit renvoyer `"catalogueSource":"database"`.
+- `GET /api/health/db` exécute une vraie requête (`count` sur `landing_sites`) : `200 {"status":"ok","sites":13,...}`,
+  ou `503` si la base n'est pas configurée ou ne répond pas.
+- `.github/workflows/keep-alive.yml` appelle cette route **toutes les 2 h** pour que Supabase (offre gratuite, pause après
+  7 jours d'inactivité) ne se mette pas en pause. GitHub n'exécute les tâches planifiées que depuis la **branche par défaut** :
+  le fichier doit être présent sur `main`. Lancement manuel : onglet **Actions** > « Keep-alive base de données » > **Run workflow**.
+  Elle ne garde pas l'API Render éveillée en continu (volontaire : quota gratuit de 750 h/mois partagé entre les services).
+
 ## Prochaines étapes
 
 PostgreSQL + Prisma (sites, runs, traçabilité), import LOLA → masques d'horizon, OpenAPI. (Déploiement Render : voir ci-dessus.)

@@ -11,6 +11,7 @@ import { compareWithHorizons, VALIDATION_NOTES } from './modules/validation/comp
 import { getReference, referenceState } from './data/reference';
 import { TERRAIN_META, terrainInfo } from './data/terrain';
 import { bodyState, type Vec3 } from './engine/lunar-frame';
+import { dbEnabled, getPrisma } from './db/client';
 
 const coords = z.object({
   lat: z.coerce.number().min(-90).max(90).optional(),
@@ -55,6 +56,22 @@ export function createApp() {
   app.use((req, res, next) => { res.locals.requestId = randomUUID(); res.setHeader('X-Request-Id', res.locals.requestId); next(); });
 
   app.get('/api/health', (_req, res) => res.json({ status: 'ok', catalogueSource: catalogueState.source, catalogueFallbackReason: catalogueState.error }));
+
+  // Requête réelle sur PostgreSQL (le catalogue, lui, est en mémoire). Appelée par la tâche planifiée
+  // .github/workflows/keep-alive.yml pour éviter la mise en pause de la base Supabase (offre gratuite).
+  // 503 si la base n'est pas configurée ou ne répond pas : la tâche échoue au lieu de passer pour rien.
+  app.get('/api/health/db', async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!dbEnabled()) return res.status(503).json({ status: 'disabled', database: false, reason: 'DATABASE_URL non définie' });
+    const t0 = Date.now();
+    try {
+      const sites = await getPrisma().landingSite.count();
+      res.json({ status: 'ok', database: true, sites, latencyMs: Date.now() - t0 });
+    } catch (e) {
+      console.error(res.locals.requestId, 'health/db :', e instanceof Error ? e.message : e);
+      res.status(503).json({ status: 'error', database: false, reason: 'base indisponible' });
+    }
+  });
 
   app.get('/api/sites', wrap((req) => {
     const { region, terrain, origin } = req.query as Record<string, string | undefined>;
