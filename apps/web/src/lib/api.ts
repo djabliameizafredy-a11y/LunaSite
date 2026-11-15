@@ -1,8 +1,8 @@
-import type { ApiError, EarthVisibilityResult, HorizonProfile, MissionScore, MoonGeometry, Site, SiteValidation, SolarResult, ValidationSummary } from '@lunasite/shared-types';
+import type { ApiError, CompareResult, EarthVisibilityResult, HorizonProfile, MissionScore, MoonGeometry, RecommendationsResult, Site, SiteValidation, SolarResult, ValidationSummary } from '@lunasite/shared-types';
 import { currentDict } from '@/i18n';
 
 /** URL de l'API Express (apps/api). Surchargée par NEXT_PUBLIC_API_URL en déploiement. */
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
 
 /** Erreur API lisible par l'UI : code, message et champ fautif (jamais une page blanche). */
 export class ApiRequestError extends Error {
@@ -11,7 +11,8 @@ export class ApiRequestError extends Error {
   }
 }
 
-const TIMEOUT_MS = 20_000;
+// 60 s : sur l'offre gratuite de Render, l'API se met en veille et met jusqu'à ~50 s à redémarrer.
+const TIMEOUT_MS = 60_000;
 
 /** Messages pour l'utilisateur : ce qui se passe et quoi faire. Le détail technique part dans la console. */
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -60,4 +61,11 @@ export const api = {
   horizon: (id: string) => request<HorizonProfile>(`${site(id)}/horizon`),
   moonGeometry: (t: string) => request<MoonGeometry>(`/moon/geometry?${qs({ t })}`),
   siteValidation: (id: string) => request<SiteValidation>(`${site(id)}/validation`),
+  /** Plusieurs sites sur [startDate, endDate) (fin exclusive). */
+  compareSites: (siteIds: string[], startDate: string, endDate: string, stepMinutes?: number) =>
+    request<CompareResult>('/compare', { method: 'POST', body: JSON.stringify({ siteIds, startDate, endDate, stepMinutes }) }),
+  /** Un site sur plusieurs jours (24 h UTC chacun). */
+  compareDates: (siteId: string, dates: string[], stepMinutes?: number) =>
+    request<CompareResult>('/compare', { method: 'POST', body: JSON.stringify({ siteIds: [siteId], dates, stepMinutes }) }),
+  recommendations: (p: PeriodParams & { region?: string }) => request<RecommendationsResult>(`/recommendations?${qs({ ...p })}`),
 };

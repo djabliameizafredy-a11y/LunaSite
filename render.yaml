@@ -1,0 +1,42 @@
+# Blueprint Render : deux services Node depuis ce monorepo (npm workspaces).
+# Render > New > Blueprint > choisir ce dépôt. Voir README, section « Déploiement sur Render ».
+services:
+  # API Express (apps/api). PostgreSQL optionnel : sans DATABASE_URL, catalogue embarqué.
+  - type: web
+    name: lunasite-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --include=dev --no-audit --no-fund
+    startCommand: npm run start -w @lunasite/api
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Supabase (pooler mode transaction, port 6543, ?pgbouncer=true). Laisser vide pour le catalogue embarqué.
+      - key: DATABASE_URL
+        sync: false
+      # Origines autorisées (séparées par des virgules). Absente = toutes.
+      - key: CORS_ORIGIN
+        sync: false
+
+  # Frontend Next.js (apps/web).
+  - type: web
+    name: lunasite-web
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --include=dev --no-audit --no-fund && npm run build -w @lunasite/web
+    startCommand: npm run start -w @lunasite/web
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      # URL publique de l'API, lue AU BUILD (NEXT_PUBLIC_*). Si Render attribue une autre URL à lunasite-api,
+      # la remplacer ici (ou dans le dashboard Render) puis relancer un déploiement du frontend.
+      - key: NEXT_PUBLIC_API_URL
+        value: https://lunasite-api.onrender.com

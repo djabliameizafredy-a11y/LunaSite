@@ -117,6 +117,36 @@ sous la contrainte pente moyenne ≤ 10°. Résultat reproductible dans `data/lo
 6. comparaison de plusieurs dates pour un même site : **implémentée** (`dates:[…]`).
 5. score terrain : **proposé ci-dessus (v0.1)**, à valider. Reste ouvert : projection cartographique.
 
+## Frontend (apps/web)
+
+```bash
+npm run web:dev        # http://localhost:3000 (API attendue sur http://localhost:3001, ou NEXT_PUBLIC_API_URL)
+npm run web:build
+```
+Pages : accueil, vue d'ensemble, **Horizon 3D en direct** (ciel du site à l'instant présent, mis à jour chaque seconde,
+sans lecture manuelle), catalogue + globe 3D, **Comparer** (2 à 4 sites sur une période, ou un site à 2–4 dates,
+`POST /api/compare`), **Recommandations** (classement, `GET /api/recommendations`), à propos, données et limites.
+Globe 3D : texture chargée comme dans le prototype de Fredy (lunascope-mui) depuis `apps/web/public/textures/moon_equirect.jpg`
+(mosaïque NASA LROC WAC, voir le README de ce dossier) ; si l'image manque, repli automatique sur la texture procédurale.
+
+## Déploiement sur Render
+
+Le fichier `render.yaml` (Blueprint) crée deux services web Node 22 depuis ce dépôt :
+
+| Service | Build | Start | Variables |
+|---|---|---|---|
+| `lunasite-api` | `npm ci --include=dev` | `npm run start -w @lunasite/api` | `DATABASE_URL` (optionnelle, Supabase pooler 6543), `CORS_ORIGIN` (optionnelle) |
+| `lunasite-web` | `npm ci --include=dev && npm run build -w @lunasite/web` | `npm run start -w @lunasite/web` | `NEXT_PUBLIC_API_URL` = URL publique de l'API |
+
+1. Render > **New > Blueprint** > choisir le dépôt et la branche. Remplir `DATABASE_URL` (ou la laisser vide : catalogue embarqué).
+2. Vérifier l'URL attribuée à l'API (`https://lunasite-api.onrender.com` par défaut). Si elle diffère, mettre la bonne valeur
+   dans `NEXT_PUBLIC_API_URL` du service web puis **Manual Deploy** : cette variable est lue au build.
+3. Contrôle : `https://<api>/api/health` → `{"status":"ok", ...}`.
+
+`next start` écoute sur `PORT` (fourni par Render). `--include=dev` est nécessaire : `tsx` (démarrage de l'API) et la CLI
+Prisma (`postinstall` → `prisma generate`, qui fonctionne sans base) sont des dépendances de développement.
+Offre gratuite : l'API se met en veille après 15 min ; le premier appel peut prendre ~50 s (le client attend jusqu'à 60 s).
+
 ## Prochaines étapes
 
-PostgreSQL + Prisma (sites, runs, traçabilité), import LOLA → masques d'horizon, déploiement (Railway/Render), OpenAPI.
+PostgreSQL + Prisma (sites, runs, traçabilité), import LOLA → masques d'horizon, OpenAPI. (Déploiement Render : voir ci-dessus.)

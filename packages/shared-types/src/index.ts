@@ -202,3 +202,37 @@ export interface MoonGeometry {
   subSolar: { latDeg: number; lonDeg: number };
   subEarth: { latDeg: number; lonDeg: number };
 }
+
+/* ---------- Comparaison (POST /api/compare) et recommandations (GET /api/recommendations) ---------- */
+
+export interface CompareScenario {
+  siteId: string;
+  siteName: string;
+  period: { start: string; end: string };
+  solar: Pick<SolarResult, 'sunlitHours' | 'darknessHours' | 'sunlitFraction' | 'maxSunElevationDeg' | 'longestDarknessHours' | 'sunWindows' | 'energyPotential'>;
+  earth: Pick<EarthVisibilityResult, 'visibleHours' | 'visibleFraction' | 'maxEarthElevationDeg' | 'longestVisibilityGapHours' | 'windows'>;
+  score: MissionScore;
+  meta: ResultMeta;
+}
+
+export interface CompareResult {
+  /** 'sites' : plusieurs sites sur une période ; 'dates' : un ou plusieurs sites sur plusieurs jours. */
+  mode: 'sites' | 'dates';
+  scenarios: CompareScenario[];
+}
+
+export interface RecommendationEntry {
+  rank: number;
+  siteId: string;
+  siteName: string;
+  rankingScore: number;
+  rankingBasis: 'global' | 'partial';
+  score: MissionScore;
+}
+
+export interface RecommendationsResult {
+  period: { start: string; end: string };
+  rankingBasis: 'global' | 'partial';
+  criteria: string;
+  ranking: RecommendationEntry[];
+}
