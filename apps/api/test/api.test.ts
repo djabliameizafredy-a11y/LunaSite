@@ -5,6 +5,18 @@ import { createApp } from '../src/app';
 const app = createApp();
 
 describe('API REST', () => {
+  it('GET /api/health/db sans DATABASE_URL -> 503 explicite (la tâche planifiée échoue, elle ne ment pas)', async () => {
+    const saved = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    try {
+      const r = await request(app).get('/api/health/db').expect(503);
+      expect(r.body).toMatchObject({ status: 'disabled', database: false });
+      expect(r.headers['cache-control']).toBe('no-store');
+    } finally {
+      if (saved !== undefined) process.env.DATABASE_URL = saved;
+    }
+  });
+
   it('GET /api/sites liste et filtre', async () => {
     const all = await request(app).get('/api/sites').expect(200);
     expect(all.body.length).toBeGreaterThan(5);

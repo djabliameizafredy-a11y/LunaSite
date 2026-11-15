@@ -3,11 +3,19 @@ import { describe, it, expect, afterAll } from 'vitest';
 import { closePrisma, dbEnabled, getPrisma } from '../src/db/client';
 import { SITES } from '../src/data/sites';
 import { EMBEDDED_TERRAIN } from '../src/data/terrain';
+import request from 'supertest';
+import { createApp } from '../src/app';
 
 // Tests d'intégration : exigent PostgreSQL migré et seedé (npm run db:up && npm run db:migrate && npm run db:seed).
 // Sans DATABASE_URL ils sont IGNORÉS (et non « réussis ») : le rapport vitest affiche « skipped ».
 describe.skipIf(!dbEnabled())('PostgreSQL (intégration)', () => {
   afterAll(closePrisma);
+
+  it('GET /api/health/db interroge réellement la base (route appelée par la tâche planifiée)', async () => {
+    const r = await request(createApp()).get('/api/health/db').expect(200);
+    expect(r.body).toMatchObject({ status: 'ok', database: true, sites: SITES.length });
+    expect(typeof r.body.latencyMs).toBe('number');
+  });
 
   it('le seed reflète le catalogue embarqué, sans doublon', async () => {
     const db = getPrisma();

@@ -1,7 +1,7 @@
 'use client';
 /**
  * Globe lunaire 3D (adapté du prototype de l'équipe, scene/moon-globe-view.tsx).
- *  - Texture : mosaïque NASA LROC WAC (public/textures/moon_equirect.jpg), chargée comme dans le prototype de Fredy
+ *  - Texture : Solar System Scope 2k (CC BY 4.0, d'après NASA LRO) dans public/textures/moon_equirect.jpg, chargée comme dans le prototype de Fredy
  *    (lunascope-mui, moon-globe.tsx : TextureLoader, sRGB, anisotropie 8, bumpMap = même image).
  *    Si l'image manque, repli sur la texture procédurale (lib/moon-texture), signalé dans la légende.
  *  - Éclairage placé au point subsolaire calculé par l'API (/api/moon/geometry) : le terminateur jour/nuit est réel.
